@@ -22,25 +22,29 @@
 #include "Spherical.hpp"
 #include "Orthographic.hpp"
 
-// Initial size
+// Window content dimensions (pixels)
 int screen_width = 512;
 int screen_height = 512;
 
-// Horizontal field of view
+// Horizontal field of view (radians)
 double hfov = M_PI / 2.0;
 
+// Normalize heights in heightmap between these bounds
 double min_height = 0.0;
 double max_height = 10.0;
 
+// Pointer to double array of heights
 double *heightmap;
 int heightmap_width;
 int heightmap_height;
 
+// Array of RGB unsigned char values
 unsigned char *colormap;
 int colormap_width;
 int colormap_height;
 
 // Width and height of grid cells of image heightmap
+// i.e. how far apart pixels from the image are in world space when rendered
 double grid_width = 0.003;
 
 // How far to step at a time when raymarching
@@ -55,17 +59,21 @@ unsigned int full_mask;
 unsigned int half_mask;
 unsigned int incr;
 
+// Position of camera
 glm::dvec3 cam_pos(-5.0, 5.0, 0.0);
 
 // Horizontal angle of camera (rads)
-// 0 is looking down positive x axis
-// pi / 2 is looking down positive y axis
+// 0 is looking in direction of positive x axis
+// pi / 2 is looking in direction of positive y axis
 double hang = -M_PI / 4.0;
+
 // Vertical angle of camera (rads)
 // 0 is looking straight up (with positive z axis)
 // pi / 2 is looking parallel to xy plane
 double vang = M_PI / 2.0;
 
+// Multiplier for how many radians to turn
+// For both horizontal and vertical mouse sensitivity
 double mouse_sens = 0.00003;
 
 // Render only part of the screen in a single frame
@@ -87,6 +95,7 @@ Uint8 bg_r = 0;
 Uint8 bg_g = 0;
 Uint8 bg_b = 0;
 
+// Return val clamped within range [min, max]
 int clamp(int val, int min, int max) {
 	if (val < min) return min;
 	if (val > max) return max;
@@ -94,6 +103,8 @@ int clamp(int val, int min, int max) {
 	return val;
 }
 
+// This makes assumptions about the format of the surface
+// Could be improved to be more robust (but likely less performant)
 void set_pixel(SDL_Surface *surface, int x, int y, Uint8 r, Uint8 g, Uint8 b) {
 	Uint32 *pixels = (Uint32 *) surface->pixels;
 
@@ -102,9 +113,11 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint8 r, Uint8 g, Uint8 b) {
 	pixels[x + (y * surface->w)] = color;
 }
 
+// num_bits should be multiple of 2 in range [min_cycle_bits, max_cycle_bits]
 unsigned int min_cycle_bits;
 unsigned int max_cycle_bits;
 
+// Update variables related to the render cycle based on using num_bits
 void update_cycle_vars(unsigned int num_bits, unsigned int *shift_amt, unsigned int *full_mask, unsigned int *half_mask, unsigned int *incr) {
 	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
@@ -122,6 +135,8 @@ int main(int argc, char *argv[]) {
 		std::cout << "Unknown int and unsigned int implementations" << std::endl;
 		std::cout << "NUM_INT_BITS: " << NUM_INT_BITS << std::endl;
 		std::cout << "NUM_UINT_BITS: " << NUM_UINT_BITS << std::endl;
+
+		exit(1);
 	}
 
 	min_cycle_bits = 2;
@@ -326,12 +341,11 @@ int main(int argc, char *argv[]) {
 
 	SDL_Event event;
 	bool quit = false;
-	int drawing = 0;
 
 	Uint32 old_time = SDL_GetTicks();// milliseconds
 	Uint32 new_time;
 	Uint32 delta;
-	Uint32 ddelta;
+	double ddelta;
 
 	if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
 		printf("Initial SDL_SetRelativeMouseMode failed: %s\n", SDL_GetError());
