@@ -1,0 +1,10 @@
+*.exe
+*.exp
+*.lib
+*.obj
+
+SDL2-2.0.9
+src/glm
+
+img
+inputs
