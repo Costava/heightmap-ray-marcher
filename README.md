@@ -1,17 +1,33 @@
 # heightmap-ray-marcher
 
 A ray marcher for heightmap images or any images.  
-Move the camera with WASD and the mouse.
+Move the camera with WASD and the mouse.  
+Switch the projection mode with the number keys:
+1. Perspective
+2. Spherical
+3. Orthographic
 
 Feel free to ask a question by opening an issue.
 
 ## What it can do
 
-![White tiger](https://i.imgur.com/EP4EnZ9.png)
+These three images were created with the same camera position and direction, but different projection modes.
+
+Perspective:  
+![Man (perspective)](https://i.imgur.com/hOn8tdS.png)
+
+Spherical:  
+![Man (spherical)](https://i.imgur.com/QJzDTO5.png)
+
+Orthographic:  
+![Man (orthographic)](https://i.imgur.com/cHbKgmL.png)  
+[Original image](https://unsplash.com/photos/rpF3p_RrE9g)
+
+![White tiger](https://i.imgur.com/EP4EnZ9.png)  
 [Original image](https://unsplash.com/photos/dGMcpbzcq1I)
 
 ![Face in leaves (close)](https://i.imgur.com/MQwqKdL.png)
-![Face in leaves (overview)](https://i.imgur.com/voGVGgZ.png)
+![Face in leaves (overview)](https://i.imgur.com/voGVGgZ.png)  
 [Original image](https://unsplash.com/photos/svnH68VDN4Q)
 
 ## Build
