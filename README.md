@@ -5,6 +5,15 @@ Move the camera with WASD and the mouse.
 
 Feel free to ask a question by opening an issue.
 
+## What it can do
+
+![White tiger](https://i.imgur.com/EP4EnZ9.png)
+[Original image](https://unsplash.com/photos/dGMcpbzcq1I)
+
+![Face in leaves (close)](https://i.imgur.com/MQwqKdL.png)
+![Face in leaves (overview)](https://i.imgur.com/voGVGgZ.png)
+[Original image](https://unsplash.com/photos/svnH68VDN4Q)
+
 ## Build
 
 This covers building on Windows 64-bit and 32-bit. On Linux and macOS, use your favorite C/C++ compiler and the appropriate SDL2 distribution. This project uses the current stable SDL version `2.0.9`.
