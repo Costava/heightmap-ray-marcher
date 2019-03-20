@@ -1,0 +1,12 @@
+resolution 800 450
+hfov 90
+min_height 0.0
+max_height 10.0
+grid_width 0.01
+ortho_width 0.1
+step_dist 0.05
+bg_color 0 0 0
+cycle_bits 6
+mouse_sens 0.00003
+heightmap path/to/img.jpg
+colormap path/to/img.jpg
