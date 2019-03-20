@@ -1,6 +1,7 @@
 # heightmap-ray-marcher
 
-A ray marcher for heightmap images or any images.  
+A ray marcher for heightmap images or any images.
+
 Move the camera with WASD and the mouse. Hold space to raise the camera and hold shift to lower it.  
 Switch the projection mode with the number keys:
 1. Perspective
@@ -10,6 +11,8 @@ Switch the projection mode with the number keys:
 Press escape to exit.  
 Press F11 to toggle fullscreen.  
 You can freely resize the window.
+
+For each pixel, a ray is cast and intersection is checked with an axis aligned bounding box (AABB) around the heightmap. If the ray collides with the AABB, then ray marching begins at the collision point.
 
 Feel free to ask a question by opening an issue.
 
