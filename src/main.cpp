@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 	max_cycle_bits = NUM_UINT_BITS;
 
 	if (argc != 2) {
-		std::cout << "USAGE: hmap.exe path/to/input.txt" << std::endl;
+		std::cout << "USAGE: hmap.exe path/to/config.txt" << std::endl;
 
 		exit(1);
 	}
