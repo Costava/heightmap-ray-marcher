@@ -38,7 +38,7 @@ Orthographic:
 The program is launched from the command line with a configuration file argument: `hmap.exe path/to/config.txt`.  
 Every line in the config starts with an identifier followed by the appropriate arguments for that identifier separated by spaces.  
 All config file options are optional except `heightmap` and `colormap`.  
-Options can be specified in any order, but each should have its own line.
+Options can be specified in any order, but each should have its own line.  
 Currently, input to many options is not checked for validity.  
 See `sample_config.txt` for an example.
 
