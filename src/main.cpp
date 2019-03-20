@@ -83,7 +83,7 @@ int render_cycle = 0;
 bool fullscreen = false;
 
 // How far apart the orthographic rays are
-double ortho_width = 14.0 * grid_width;
+double ortho_width = 10.0 * grid_width;
 
 // 1: Perspective
 // 2: Spherical
@@ -201,6 +201,11 @@ int main(int argc, char *argv[]) {
 
 			std::cout << "grid_width: " << grid_width << std::endl;
 		}
+		else if (next == "ortho_width") {
+			input >> ortho_width;
+
+			std::cout << "ortho_width: " << ortho_width << std::endl;
+		}
 		else if (next == "step_dist") {
 			input >> step_dist;
 
@@ -238,6 +243,11 @@ int main(int argc, char *argv[]) {
 
 				update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 			}
+		}
+		else if (next == "mouse_sens") {
+			input >> mouse_sens;
+
+			std::cout << "mouse_sens: " << mouse_sens << std::endl;
 		}
 		else if (next == "heightmap") {
 			std::string path;
