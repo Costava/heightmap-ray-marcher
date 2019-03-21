@@ -1,6 +1,6 @@
 # heightmap-ray-marcher
 
-A ray marcher for heightmap images or any images.
+A ray marcher for heightmap images or any images with a real time freely moving camera.
 
 Move the camera with WASD and the mouse. Hold space to raise the camera and hold shift to lower it.  
 Switch the projection mode with the number keys:
@@ -33,7 +33,11 @@ Orthographic:
 ![White tiger](https://i.imgur.com/EP4EnZ9.png)  
 [Original image](https://unsplash.com/photos/dGMcpbzcq1I)
 
-![Face in leaves (close)](https://i.imgur.com/MQwqKdL.png)
+![Face (close)](https://i.imgur.com/dxoOZgR.png)  
+![Face (overview)](https://i.imgur.com/YJSp7cq.png)  
+[Original image](https://unsplash.com/photos/sibVwORYqs0)
+
+![Face in leaves (close)](https://i.imgur.com/MQwqKdL.png)  
 ![Face in leaves (overview)](https://i.imgur.com/voGVGgZ.png)  
 [Original image](https://unsplash.com/photos/svnH68VDN4Q)
 
