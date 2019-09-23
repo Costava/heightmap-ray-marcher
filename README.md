@@ -1,6 +1,6 @@
 # heightmap-ray-marcher
 
-A ray marcher for heightmap images or any images with a real time freely moving camera.
+A ray marcher for heightmap images (or any images) with a real time freely moving camera.
 
 Move the camera with WASD and the mouse. Hold space to raise the camera and hold shift to lower it.  
 Switch the projection mode with the number keys:
@@ -45,11 +45,15 @@ Orthographic:
 The program is launched from the command line with a configuration file argument: `hmap.exe path/to/config.txt`.  
 Every line in the config starts with an identifier followed by the appropriate arguments for that identifier separated by spaces.  
 All config file options are optional except `heightmap` and `colormap`.  
-Options can be specified in any order, but each should have its own line.  
+Options can be specified in any order, but each option should have its own line.  
 Currently, input to many options is not checked for validity.  
 See `sample_config.txt` for an example.
 
 ### Options
+`heightmap path/to/img.jpg`: A path to an image. The image does NOT have to be greyscale. The luminance of the image's pixels determine the heights. The image can be any format supported by `stb_image.h`: JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, PNM. See `src/stb_image.h` for details and exceptions. The image must have the same resolution as the image for `colormap`. **This option must be specified.**
+
+`colormap path/to/img.jpg`: Similar to `heightmap` but for determining colors. The easiest choice will be the same image as for `heightmap`. The specified image must have the same resolution as the image for `heightmap`. **This option must be specified.**
+
 `resolution <int x> <int y>`: The x and y dimensions (in pixels) of the window content.
 
 `hfov <double degrees>`: Set the horizontal field of view (in degrees). You will likely experience issues if this is not in the range (0, 180).
@@ -70,28 +74,28 @@ See `sample_config.txt` for an example.
 
 `mouse_sens <double val>`: Multiplier for how many radians to turn the camera when using the mouse. This applies to both horizontal and vertical rotation.
 
-`heightmap path/to/img.jpg`: A path to an image. The image does NOT have to be greyscale. The luminance of the image's pixels determine the heights. The image can be any format supported by `stb_image.h`: JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, PNM. See `src/stb_image.h` for details and exceptions. The image must have the same resolution as the image for `colormap`. This option must be specified.
-
-`colormap path/to/img.jpg`: Similar to `heightmap` but for determining colors. The easiest and most often best choice will be the same image as for `heightmap`. The image must have the same resolution as the image for `heightmap`. This option must be specified.
-
 ## Build
 
-This covers building on Windows 64-bit and 32-bit. On Linux and macOS, use your favorite C/C++ compiler and the appropriate SDL2 distribution. This project uses the current stable SDL version `2.0.9`.
+This covers a way to build on Windows 64-bit and 32-bit.  
+For Linux and macOS, use your favorite C/C++ compiler.
 
-### Download
-- Download and install [Build Tools for Visual Studio 2017](https://www.visualstudio.com/downloads) to get the `CL` C/C++ compiler and `x64 Native Tools Command Prompt`. Use `x86 Native Tools Command Prompt` for 32-bit Windows. More information on these command prompts  [here](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line).
-- Download the Visual C++ [SDL2 development libraries](https://www.libsdl.org/download-2.0.php).
+- Download and install [Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads) to get the `CL` C/C++ compiler and `x64 Native Tools Command Prompt`.
+- - Use `x86 Native Tools Command Prompt` for 32-bit Windows.
+- - More information on these command prompts [here](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line).
+- Get a copy of SDL 2.0.9. Source and builds available [here](https://www.libsdl.org/download-2.0.php).
 - Download [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html)
 
 ### Symbolic links
-- Create a symbolic link named `SDL2-2.0.9` targeting the location of the downloaded `SDL2-2.0.9` folder. Likely use `mklink /D SDL2-2.0.9 C:\path\to\SDL2-2.0.9`. The `/D` argument is for directory symbolic link as opposed to the default file symbolic link.
-- Create link `glm` inside `src` targeting your `glm` folder
+- In the `src` folder, create a symbolic link named `SDL` targeting your copy of SDL.
+- - `mklink /D src\SDL C:\path\to\SDL2-2.0.9`
+- In the `src` folder, create link `glm` targeting your `glm` folder.
+- - `mklink /D src\glm C:\path\to\glm`
 
 ### How to
-`build.bat` builds the executable for 64-bit Windows, but the project can be built for 32-bit and 64-bit Windows/Linux/macOS with an appropriate compiler and SDL2 distribution.
+`BuildCl.cmd` and `BuildClang.cmd` build the executable for 64-bit Windows using either `CL` or `Clang` respectively.
 
-Run `build.bat` in the command prompt from above to build. Run `build.bat dev` to get a console when the program runs.
+Run the scripts in the command prompt from above to build. Pass argument `prod` to the scripts for the `WINDOWS` subsystem (no console/printouts when program runs).
 
-Switch `x64` to `x86` for `sdl_libpath` in `build.bat` for 32-bit.
+Switch `x64` to `x86` for `sdl_lib_path` in `BuildVars.cmd` for 32-bit.
 
 Run the resulting executable `hmap.exe` with a path argument to a config file: `hmap.exe path/to/config.txt`
