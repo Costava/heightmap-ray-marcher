@@ -3,7 +3,8 @@
 *.lib
 *.obj
 
-SDL2-2.0.9
+# You need to make these symbolic links as per README.md
+src/SDL
 src/glm
 
 img
