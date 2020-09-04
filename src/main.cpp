@@ -236,11 +236,31 @@ int main(int argc, char *argv[]) {
 
 			input >> cyc;
 
-			if (cyc % 2 != 0) {
-				std::cout << "Ignoring cycle bits " << cyc << " because is not a multiple of 2" << std::endl;
+			if (cyc < 2) {
+				std::cout
+					<< "Ignoring cycle bits "
+					<< cyc
+					<< " because is < 2"
+					<< std::endl;
 			}
-			else if (cyc < min_cycle_bits || cyc > max_cycle_bits) {
-				std::cout << "Ignoring cycle bits " << cyc << " because not in range [" << min_cycle_bits << ", " << max_cycle_bits << "]" << std::endl;
+			else if (cyc % 2 != 0) {
+				std::cout
+					<< "Ignoring cycle bits "
+					<< cyc
+					<< " because is not a multiple of 2"
+					<< std::endl;
+			}
+			else if ((unsigned int)cyc < min_cycle_bits ||
+			         (unsigned int)cyc > max_cycle_bits)
+			{
+				std::cout
+					<< "Ignoring cycle bits "
+					<< cyc
+					<< " because not in range ["
+					<< min_cycle_bits
+					<< ", "
+					<< max_cycle_bits
+					<< "]" << std::endl;
 			}
 			else {
 				std::cout << "Cycle bits: " << cyc << std::endl;
