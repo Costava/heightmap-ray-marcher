@@ -102,7 +102,7 @@ Uint8 bg_g = 0;
 Uint8 bg_b = 0;
 
 // Return val clamped within range [min, max]
-int clamp(int val, int min, int max) {
+int clamp(const int val, const int min, const int max) {
 	if (val < min) return min;
 	if (val > max) return max;
 
@@ -111,10 +111,17 @@ int clamp(int val, int min, int max) {
 
 // This makes assumptions about the format of the surface
 // Could be improved to be more robust (but likely less performant)
-void set_pixel(SDL_Surface *surface, int x, int y, Uint8 r, Uint8 g, Uint8 b) {
-	Uint32 *pixels = (Uint32 *) surface->pixels;
+void set_pixel(
+	SDL_Surface *const surface,
+	const int x,
+	const int y,
+	const Uint8 r,
+	const Uint8 g,
+	const Uint8 b)
+{
+	Uint32 *const pixels = (Uint32 *) surface->pixels;
 
-	Uint32 color = SDL_MapRGB(surface->format, r, g, b);
+	const Uint32 color = SDL_MapRGB(surface->format, r, g, b);
 
 	pixels[x + (y * surface->w)] = color;
 }
@@ -124,7 +131,13 @@ unsigned int min_cycle_bits;
 unsigned int max_cycle_bits;
 
 // Update variables related to the render cycle based on using num_bits
-void update_cycle_vars(unsigned int num_bits, unsigned int *shift_amt, unsigned int *full_mask, unsigned int *half_mask, unsigned int *incr) {
+void update_cycle_vars(
+	const unsigned int num_bits,
+	unsigned int *const shift_amt,
+	unsigned int *const full_mask,
+	unsigned int *const half_mask,
+	unsigned int *const incr)
+{
 	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
 	*shift_amt = num_bits / 2;
@@ -150,7 +163,6 @@ int main(int argc, char *argv[]) {
 
 	if (argc != 2) {
 		std::cout << "USAGE: hmap.exe path/to/config.txt" << std::endl;
-
 		exit(1);
 	}
 
@@ -163,7 +175,6 @@ int main(int argc, char *argv[]) {
 
 	if (!input.is_open()) {
 		std::cout << "Failed to open input file: " << argv[1] << std::endl;
-
 		exit(1);
 	}
 
@@ -347,25 +358,20 @@ int main(int argc, char *argv[]) {
 
 	// Done parsing input file
 
-	SDL_Window *window = NULL;
-	SDL_Surface *surface = NULL;
-
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		printf("SDL_Init failed: %s\n", SDL_GetError());
-
 		exit(1);
 	}
 
-	window = SDL_CreateWindow("Heightmap Ray Marcher", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_RESIZABLE);
+	SDL_Window *window = SDL_CreateWindow("Heightmap Ray Marcher", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_RESIZABLE);
 
 	if (window == NULL) {
 		printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
-
 		exit(1);
 	}
 
-	surface = SDL_GetWindowSurface(window);
+	SDL_Surface *surface = SDL_GetWindowSurface(window);
 
 	// Initialize window to all background color
 	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, bg_r, bg_g, bg_b));
@@ -375,7 +381,6 @@ int main(int argc, char *argv[]) {
 
 	update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
-	SDL_Event event;
 	bool quit = false;
 
 	Uint32 old_time = SDL_GetTicks();// milliseconds
@@ -385,7 +390,6 @@ int main(int argc, char *argv[]) {
 
 	if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
 		printf("Initial SDL_SetRelativeMouseMode failed: %s\n", SDL_GetError());
-
 		exit(1);
 	}
 
@@ -425,6 +429,7 @@ int main(int argc, char *argv[]) {
 			0.0
 		);
 
+		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT) {
 				quit = true;
@@ -509,7 +514,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		const Uint8 *kb_state = SDL_GetKeyboardState(NULL);
+		const Uint8 *const kb_state = SDL_GetKeyboardState(NULL);
 
 		double move_mult = 0.01;
 
