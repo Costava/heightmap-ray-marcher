@@ -7,7 +7,13 @@
 #include <string>
 #include <climits>
 
-#include <SDL.h>
+#ifdef _WIN32
+	#include <SDL.h>
+#elif defined(__linux)
+	#include <SDL2/SDL.h>
+#else
+	#error Failed to include SDL2
+#endif
 
 #include "glm/glm.hpp"
 #define GLM_ENABLE_EXPERIMENTAL

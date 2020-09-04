@@ -3,9 +3,12 @@
 *.lib
 *.obj
 
-# You need to make these symbolic links as per README.md
+hmap
+
+# You need to make these symbolic links as per README.md (Windows only)
 src/SDL
 src/glm
 
 img
 configs
+obj
