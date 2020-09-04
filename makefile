@@ -13,6 +13,8 @@ init:
 
 build: hmap
 
+buildfresh: clean build
+
 clean:
 	rm -f hmap
 	rm -f $(OBJDIR)/*.o
