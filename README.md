@@ -12,7 +12,8 @@ Press escape to exit.
 Press F11 to toggle fullscreen.  
 You can freely resize the window.
 
-For each pixel, a ray is cast and intersection is checked with an axis aligned bounding box (AABB) around the heightmap. If the ray collides with the AABB, then ray marching begins at the collision point.
+For each pixel, a ray is cast and intersection is checked with an axis aligned bounding box (AABB) around the heightmap.
+If the ray collides with the AABB, then ray marching begins at the collision point.
 
 Feel free to ask a question by opening an issue.
 
@@ -74,16 +75,24 @@ See `sample_config.txt` for an example.
 
 `mouse_sens <double val>`: Multiplier for how many radians to turn the camera when using the mouse. This applies to both horizontal and vertical rotation.
 
-## Build
+## Build and run on Linux
 
-This covers a way to build on Windows 64-bit and 32-bit.  
-For Linux and macOS, use your favorite C/C++ compiler.
+Tested with SDL 2.0.12 and glm 0.9.9.8  
+The makefile does incremental compilation.
+
+1. Clone the repo
+2. Install [SDL2](https://www.libsdl.org/) and [OpenGL Mathematics](https://glm.g-truc.net/) (might be named `glm`) through your package manager
+3. `make init`
+4. `make build`
+5. Run with `./hmap path/to/config.txt`
+
+## Build and run on Windows
 
 - Download and install [Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads) to get the `CL` C/C++ compiler and `x64 Native Tools Command Prompt`.
 - - Use `x86 Native Tools Command Prompt` for 32-bit Windows.
 - - More information on these command prompts [here](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line).
-- Get a copy of SDL 2.0.9. Source and builds available [here](https://www.libsdl.org/download-2.0.php).
-- Download [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html)
+- Get a copy of SDL 2.0.9. Source and builds available [here](https://www.libsdl.org/download-2.0.php) (newer versions likely work also).
+- Download [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html) (newer versions likely work also).
 
 ### Symbolic links
 - In the `src` folder, create a symbolic link named `SDL` targeting your copy of SDL.
@@ -99,3 +108,11 @@ Run the scripts in the command prompt from above to build. Pass argument `prod` 
 Switch `x64` to `x86` for `sdl_lib_path` in `BuildVars.cmd` for 32-bit.
 
 Run the resulting executable `hmap.exe` with a path argument to a config file: `hmap.exe path/to/config.txt`
+
+## License
+
+GNU General Public License v3. See file `LICENSE`.
+
+## Contributing
+
+Not currently accepting contributions. Feel free to create an issue.
