@@ -1,3 +1,7 @@
+// MODIFIED.
+// Added some redundant casts to silence some -Wconversion warnings.
+// See git history of repo for details.
+
 /* stb_image - v2.27 - public domain image loader - http://nothings.org/stb
                                   no warranty implied; use at your own risk
 
@@ -3040,7 +3044,7 @@ static void stbi__jpeg_dequantize(short *data, stbi__uint16 *dequant)
 {
    int i;
    for (i=0; i < 64; ++i)
-      data[i] *= dequant[i];
+      data[i] = (short)(data[i] * dequant[i]);
 }
 
 static void stbi__jpeg_finish(stbi__jpeg *z)
@@ -4796,7 +4800,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
       stbi__uint16 *cur16 = (stbi__uint16*)cur;
 
       for(i=0; i < x*y*out_n; ++i,cur16++,cur+=2) {
-         *cur16 = (cur[0] << 8) | cur[1];
+         *cur16 = (stbi__uint16)((cur[0] << 8) | cur[1]);
       }
    }
 
@@ -4997,9 +5001,9 @@ static void stbi__de_iphone(stbi__png *z)
             stbi_uc t = p[0];
             if (a) {
                stbi_uc half = a / 2;
-               p[0] = (p[2] * 255 + half) / a;
-               p[1] = (p[1] * 255 + half) / a;
-               p[2] = ( t   * 255 + half) / a;
+               p[0] = (stbi_uc)((p[2] * 255 + half) / a);
+               p[1] = (stbi_uc)((p[1] * 255 + half) / a);
+               p[2] = (stbi_uc)(( t   * 255 + half) / a);
             } else {
                p[0] = p[2];
                p[2] = t;

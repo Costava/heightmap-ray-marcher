@@ -20,6 +20,8 @@
 #include "glm/gtx/string_cast.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_HDR
+#define STBI_NO_SIMD
 #include "stb_image.h"
 
 #include "AABB.hpp"
@@ -233,9 +235,9 @@ int main(int argc, char *argv[]) {
 
 			input >> r >> g >> b;
 
-			bg_r = r;
-			bg_g = g;
-			bg_b = b;
+			bg_r = (Uint8)r;
+			bg_g = (Uint8)g;
+			bg_b = (Uint8)b;
 
 			std::cout << "New background color:" << std::endl;
 			std::cout << "\tr: " << (int)bg_r << std::endl;
@@ -377,7 +379,7 @@ int main(int argc, char *argv[]) {
 	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, bg_r, bg_g, bg_b));
 	SDL_UpdateWindowSurface(window);
 
-	srand(time(NULL));
+	srand((unsigned)time(NULL));
 
 	update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
@@ -596,8 +598,10 @@ int main(int argc, char *argv[]) {
 					int_point += grid_width * 0.01 * ray.dir;
 
 					while (true) {
-						int gridx =  (int_point.x - hmap_c0.x) / grid_width;
-						int gridy = -(int_point.y - hmap_c0.y) / grid_width;
+						int gridx =
+							(int)( (int_point.x - hmap_c0.x) / grid_width);
+						int gridy =
+							(int)(-(int_point.y - hmap_c0.y) / grid_width);
 
 						if (gridx < 0 || gridy < 0 || gridx >= heightmap_width || gridy >= heightmap_height) {
 							break;
