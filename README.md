@@ -77,14 +77,12 @@ See `sample_config.txt` for an example.
 
 ## Build and run on Linux
 
-Tested with SDL 2.0.12 and glm 0.9.9.8  
-The makefile does incremental compilation.
+Tested with SDL 2.0.16 and glm 0.9.9.8  
 
 1. Clone the repo
-2. Install [SDL2](https://www.libsdl.org/) and [OpenGL Mathematics](https://glm.g-truc.net/) (might be named `glm`) through your package manager
-3. `make init`
-4. `make build`
-5. Run with `./hmap path/to/config.txt`
+2. Install [SDL2](https://www.libsdl.org/) and [OpenGL Mathematics](https://glm.g-truc.net/) through your package manager e.g. `pamac install sdl2 glm`
+3. `make build`
+4. Run with `./hmap path/to/config.txt`
 
 ## Build and run on Windows
 
