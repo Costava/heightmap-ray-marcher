@@ -143,7 +143,8 @@ void update_cycle_vars(
 	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
 	*shift_amt = num_bits / 2;
-	*full_mask = (UINT_MAX << (NUM_UINT_BITS - num_bits)) >> (NUM_UINT_BITS - num_bits);
+	*full_mask = (UINT_MAX << (NUM_UINT_BITS - num_bits))
+	             >> (NUM_UINT_BITS - num_bits);
 	*half_mask = *full_mask >> (num_bits / 2);
 	*incr = *half_mask + 1;
 }
@@ -153,9 +154,10 @@ int main(int argc, char *argv[]) {
 	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
 	if (NUM_INT_BITS != NUM_UINT_BITS) {
-		std::cout << "Unknown int and unsigned int implementations" << std::endl;
-		std::cout << "NUM_INT_BITS: " << NUM_INT_BITS << std::endl;
-		std::cout << "NUM_UINT_BITS: " << NUM_UINT_BITS << std::endl;
+		std::cout
+			<< "Unknown int and unsigned int implementations" << std::endl
+			<< "NUM_INT_BITS: " << NUM_INT_BITS << std::endl
+			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << std::endl;
 
 		exit(1);
 	}
@@ -189,19 +191,20 @@ int main(int argc, char *argv[]) {
 
 			input >> width >> height;
 
-			std::cout << "Resolution: " << width << " by " << height << std::endl;
+			std::cout << "Resolution: " << width << " by " << height
+			          << std::endl;
 
 			screen_width = width;
 			screen_height = height;
 		}
 		else if (next == "hfov") {
 			double hf;
-
 			input >> hf;
 
 			double new_hfov = (hf / 180.0) * M_PI;
 
-			std::cout << "Horizontal field of view: " << new_hfov << " rads" << std::endl;
+			std::cout << "Horizontal field of view: " << new_hfov << " rads"
+			          << std::endl;
 
 			hfov = new_hfov;
 		}
@@ -280,7 +283,8 @@ int main(int argc, char *argv[]) {
 
 				num_bits = cyc;
 
-				update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
+				update_cycle_vars(
+					num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 			}
 		}
 		else if (next == "mouse_sens") {
@@ -295,19 +299,26 @@ int main(int argc, char *argv[]) {
 			int n;
 
 			// Load image as greyscale
-			unsigned char *data = stbi_load(path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
+			// TODO: Free data.
+			unsigned char *data = stbi_load(
+				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
 
 			if (data == NULL) {
 				std::cout << "Failed to load heightmap: " << path << std::endl;
 			}
 			else {
-				if (!cmap_specified || (heightmap_width == colormap_width && heightmap_height == colormap_height)) {
+				const bool no_dimension_conflict = !cmap_specified ||
+					(heightmap_width  == colormap_width &&
+					 heightmap_height == colormap_height);
+
+				if (no_dimension_conflict) {
 					const int LENGTH = heightmap_width * heightmap_height;
 
 					heightmap = new double[LENGTH];
 
 					for (int i = 0; i < LENGTH; ++i) {
-						heightmap[i] = ((double)data[i] / 255.0) * (max_height - min_height) + min_height;
+						heightmap[i] = ((double)data[i] / 255.0)
+							* (max_height - min_height) + min_height;
 					}
 
 					hmap_specified = true;
@@ -315,9 +326,13 @@ int main(int argc, char *argv[]) {
 					std::cout << "heightmap: " << path << std::endl;
 				}
 				else {
-					std::cout << "Ignoring heightmap at " << path;
-					std::cout <<  " because dimensions (" << heightmap_width << "x" << heightmap_height;
-					std::cout <<  ") do not match colormap dimensions (" << colormap_width << "x" << colormap_height << ")" << std::endl;
+					std::cout
+						<< "Ignoring heightmap at " << path
+						<<  " because dimensions (" << heightmap_width
+						<< "x" << heightmap_height
+						<<  ") do not match colormap dimensions ("
+						<< colormap_width << "x" << colormap_height << ")"
+						<< std::endl;
 				}
 			}
 		}
@@ -327,21 +342,30 @@ int main(int argc, char *argv[]) {
 
 			int n;
 
-			colormap = stbi_load(path.c_str(), &colormap_width, &colormap_height, &n, 3);
+			colormap = stbi_load(
+				path.c_str(), &colormap_width, &colormap_height, &n, 3);
 
 			if (colormap == NULL) {
 				std::cout << "Failed to load colormap: " << path << std::endl;
 			}
 			else {
-				if (!hmap_specified || (heightmap_width == colormap_width && heightmap_height == colormap_height)) {
+				const bool no_dimension_conflict = !hmap_specified ||
+					(heightmap_width  == colormap_width &&
+					 heightmap_height == colormap_height);
+
+				if (no_dimension_conflict) {
 					cmap_specified = true;
 
 					std::cout << "colormap: " << path << std::endl;
 				}
 				else {
-					std::cout << "Ignoring colormap at " << path;
-					std::cout <<  " because dimensions (" << colormap_width << "x" << colormap_height;
-					std::cout <<  ") do not match heightmap dimensions (" << heightmap_width << "x" << heightmap_height << ")" << std::endl;
+					std::cout
+						<< "Ignoring colormap at " << path
+						<< " because dimensions (" << colormap_width << "x"
+						<< colormap_height
+						<<  ") do not match heightmap dimensions ("
+						<< heightmap_width << "x" << heightmap_height << ")"
+						<< std::endl;
 				}
 			}
 		}
@@ -353,7 +377,9 @@ int main(int argc, char *argv[]) {
 	input.close();
 
 	if (!hmap_specified || !cmap_specified) {
-		std::cout << "Must specify both heightmap and colormap paths in input file" << std::endl;
+		std::cout
+			<< "Must specify both heightmap and colormap paths in input file"
+			<< std::endl;
 
 		exit(1);
 	}
@@ -366,7 +392,11 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	SDL_Window *window = SDL_CreateWindow("Heightmap Ray Marcher", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_RESIZABLE);
+	SDL_Window *window = SDL_CreateWindow(
+		"Heightmap Ray Marcher",
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		screen_width, screen_height,
+		SDL_WINDOW_RESIZABLE);
 
 	if (window == NULL) {
 		printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
@@ -440,10 +470,12 @@ int main(int argc, char *argv[]) {
 				if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
 					surface = SDL_GetWindowSurface(window);
 
-					// Maybe different call if high DPI allowed when window created
+					// Maybe different call if high DPI allowed
+					//  when window created
 					SDL_GetWindowSize(window, &screen_width, &screen_height);
 
-					// Show immediately that the screen has been cleared by the resize
+					// Show immediately that the screen has been
+					//  cleared by the resize
 					SDL_UpdateWindowSurface(window);
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_MOVED) {
@@ -453,7 +485,9 @@ int main(int argc, char *argv[]) {
 					printf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
 
 					if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
-						printf("FOCUS_GAINED SDL_SetRelativeMouseMode failed: %s\n", SDL_GetError());
+						std::cout
+							<< "FOCUS_GAINED SDL_SetRelativeMouseMode failed: "
+							<< SDL_GetError() << std::endl;
 
 						exit(1);
 					}
@@ -462,7 +496,9 @@ int main(int argc, char *argv[]) {
 					printf("SDL_WINDOWEVENT_FOCUS_LOST\n");
 
 					if (SDL_SetRelativeMouseMode(SDL_FALSE)) {
-						printf("FOCUS_LOST SDL_SetRelativeMouseMode failed: %s\n", SDL_GetError());
+						std::cout
+							<< "FOCUS_LOST SDL_SetRelativeMouseMode failed: "
+							<< SDL_GetError() << std::endl;
 
 						exit(1);
 					}
@@ -494,7 +530,8 @@ int main(int argc, char *argv[]) {
 					fullscreen = !fullscreen;
 
 					if (fullscreen) {
-						SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+						SDL_SetWindowFullscreen(
+							window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 					}
 					else {
 						SDL_SetWindowFullscreen(window, 0);
@@ -510,7 +547,8 @@ int main(int argc, char *argv[]) {
 					image_plane = 3;
 					break;
 				default:
-					// printf("non-escape keyup: %d %s\n", event.key.keysym.sym, SDL_GetKeyName(event.key.keysym.sym));
+					// printf("non-escape keyup: %d %s\n", event.key.keysym.sym,
+					// 	SDL_GetKeyName(event.key.keysym.sym));
 					break;
 				}
 			}
@@ -546,13 +584,16 @@ int main(int argc, char *argv[]) {
 		ImagePlane *ip;
 
 		if (image_plane == 1) {
-			ip = new Perspective(cam_pos, look, up, hfov, (double)screen_width / screen_height);
+			ip = new Perspective(cam_pos, look, up, hfov,
+				(double)screen_width / screen_height);
 		}
 		else if (image_plane == 2) {
-			ip = new Spherical(cam_pos, hang, vang, hfov, (double)screen_width / screen_height);
+			ip = new Spherical(cam_pos, hang, vang, hfov,
+				(double)screen_width / screen_height);
 		}
 		else {
-			ip = new Orthographic(cam_pos, look, up, ortho_width, screen_width, screen_height);
+			ip = new Orthographic(cam_pos, look, up, ortho_width,
+				screen_width, screen_height);
 		}
 
 		// // Clear window to black
@@ -568,12 +609,14 @@ int main(int argc, char *argv[]) {
 		);
 
 		// // 4 bit cycle
-		// int initial_h = render_cycle & 0b11;// Look at least significant bits
+		// // Look at least significant bits
+		// int initial_h = render_cycle & 0b11;
 		// int initial_w = (render_cycle >> 2) & 0b11;
 		// render_cycle = (render_cycle + 1) & 0xf;// Increment render cycle
 
 		// // 8 bit cycle
-		// int initial_h = render_cycle & 0b1111;// Look at least significant bits
+		// // Look at least significant bits
+		// int initial_h = render_cycle & 0b1111;
 		// int initial_w = (render_cycle >> 4) & 0b1111;
 		// render_cycle = (render_cycle + 1) & 0xff;// Increment render cycle
 
@@ -591,7 +634,8 @@ int main(int argc, char *argv[]) {
 				glm::dvec3 int_point;
 				bool hit = intersection(&int_point, ray, hmap_c0, hmap_c1);
 
-				// Did the ray hit the actual heightmap and not just the bounding box?
+				// Did the ray hit the actual heightmap and
+				//  not just the bounding box?
 				bool real_hit = false;
 
 				if (hit) {
@@ -603,17 +647,25 @@ int main(int argc, char *argv[]) {
 						int gridy =
 							(int)(-(int_point.y - hmap_c0.y) / grid_width);
 
-						if (gridx < 0 || gridy < 0 || gridx >= heightmap_width || gridy >= heightmap_height) {
+						if (gridx < 0 || gridy < 0
+						    || gridx >= heightmap_width
+						    || gridy >= heightmap_height)
+						{
 							break;
 						}
 
-						double heightmap_z = heightmap[gridx + gridy * heightmap_width];
+						double heightmap_z =
+							heightmap[gridx + gridy * heightmap_width];
 
 						if (int_point.z < heightmap_z + hmap_c0.z) {
 							// Draw
-							int red_index = (gridx + gridy * colormap_width) * 3;
+							int red_index =
+								(gridx + gridy * colormap_width) * 3;
 
-							set_pixel(surface, w, h, colormap[red_index], colormap[red_index + 1], colormap[red_index + 2]);
+							set_pixel(surface, w, h,
+								colormap[red_index],
+								colormap[red_index + 1],
+								colormap[red_index + 2]);
 
 							real_hit = true;
 							break;
@@ -638,7 +690,10 @@ int main(int argc, char *argv[]) {
 
 				// // Debug plane render
 				// if (ray.dir.z < 0.0) {
-				// 	set_pixel(surface, w, h, (int)(ray.dir.x * 255) % 255, (int)(ray.dir.y * 255) % 255, 128);
+				// 	set_pixel(surface, w, h,
+				// 		(int)(ray.dir.x * 255) % 255,
+				// 		(int)(ray.dir.y * 255) % 255,
+				// 		128);
 				// }
 			}
 		}
