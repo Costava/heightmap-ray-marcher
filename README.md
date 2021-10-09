@@ -10,6 +10,7 @@ Switch the projection mode with the number keys:
 
 Press escape to exit.  
 Press F11 to toggle fullscreen.  
+Press F12 to save a screenshot in `screenshots` directory.  
 You can freely resize the window.
 
 For each pixel, a ray is cast and intersection is checked with an axis aligned bounding box (AABB) around the heightmap.

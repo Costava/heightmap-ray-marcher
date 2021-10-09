@@ -9,6 +9,8 @@ hmap
 src/SDL
 src/glm
 
+tmp
 img
+screenshots
 configs
 .vscode

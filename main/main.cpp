@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <climits>
+#include <ctime>
 
 #ifdef _WIN32
 	#include <SDL.h>
@@ -23,6 +24,8 @@
 #define STBI_NO_HDR
 #define STBI_NO_SIMD
 #include "stb_image.h"
+
+#include "stb_image_write.h"
 
 #include "AABB.hpp"
 #include "ImagePlane.hpp"
@@ -558,6 +561,68 @@ int main(int argc, char *argv[]) {
 					}
 
 					break;
+				case SDLK_F12:
+				{
+					if (mod_state != KMOD_NONE) {
+						break;
+					}
+
+					if (surface->format->BytesPerPixel != 4) {
+						// Who owns the value
+						//  returned by SDL_GetPixelFormatName?
+						// I will assume I do not need to free it.
+						// https://wiki.libsdl.org/SDL_GetPixelFormatName
+
+						printf("Unhandled PixelFormat %s has BytesPerPixel=%d. "
+							"Screenshot NOT saved.\n",
+							SDL_GetPixelFormatName(surface->format->format),
+							surface->format->BytesPerPixel);
+
+						break;
+					}
+
+					std::time_t seconds = std::time(NULL);
+
+					if (seconds == (std::time_t)(-1)) {
+						std::cout
+							<< "Failed to get time for screenshot. "
+							<< "Screenshot NOT saved."
+							<< std::endl;
+
+						break;
+					}
+
+					#define MAIN_SCREENSHOT_PATH_LEN 512
+					char path[MAIN_SCREENSHOT_PATH_LEN];
+
+					snprintf(path, MAIN_SCREENSHOT_PATH_LEN,
+						"screenshots/hmap_%ld.png", seconds);
+
+					Uint8 *const data = new Uint8[surface->w * surface->h * 3];
+
+					for (int i = 0; i < surface->w * surface->h; i += 1) {
+						const Uint32 pixel = ((Uint32*)surface->pixels)[i];
+
+						SDL_GetRGB(pixel, surface->format,
+							&data[i * 3 + 0],
+							&data[i * 3 + 1],
+							&data[i * 3 + 2]);
+					}
+
+					const int code = stbi_write_png(path,
+						surface->w, surface->h, 3,
+						data, surface->w * 3);
+
+					if (code == 0) {
+						std::cout << "Failed to write screenshot." << std::endl;
+					}
+					else {
+						printf("Wrote screenshot: %s\n", path);
+					}
+
+					delete data;
+					break;
+				}
 				case SDLK_1:
 					image_plane = 1;
 					break;
