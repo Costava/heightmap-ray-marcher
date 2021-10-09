@@ -42,12 +42,12 @@ double min_height = 0.0;
 double max_height = 10.0;
 
 // Pointer to double array of heights
-double *heightmap;
+double *heightmap = NULL;
 int heightmap_width;
 int heightmap_height;
 
 // Array of RGB unsigned char values
-unsigned char *colormap;
+unsigned char *colormap = NULL;
 int colormap_width;
 int colormap_height;
 
@@ -299,8 +299,7 @@ int main(int argc, char *argv[]) {
 			int n;
 
 			// Load image as greyscale
-			// TODO: Free data.
-			unsigned char *data = stbi_load(
+			unsigned char *const data = stbi_load(
 				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
 
 			if (data == NULL) {
@@ -313,6 +312,10 @@ int main(int argc, char *argv[]) {
 
 				if (no_dimension_conflict) {
 					const int LENGTH = heightmap_width * heightmap_height;
+
+					if (heightmap != NULL) {
+						delete heightmap;
+					}
 
 					heightmap = new double[LENGTH];
 
@@ -334,6 +337,8 @@ int main(int argc, char *argv[]) {
 						<< colormap_width << "x" << colormap_height << ")"
 						<< std::endl;
 				}
+
+				stbi_image_free(data);
 			}
 		}
 		else if (next == "colormap") {
@@ -341,6 +346,10 @@ int main(int argc, char *argv[]) {
 			input >> path;
 
 			int n;
+
+			if (colormap != NULL) {
+				stbi_image_free(colormap);
+			}
 
 			colormap = stbi_load(
 				path.c_str(), &colormap_width, &colormap_height, &n, 3);
@@ -392,7 +401,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	SDL_Window *window = SDL_CreateWindow(
+	SDL_Window *const window = SDL_CreateWindow(
 		"Heightmap Ray Marcher",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		screen_width, screen_height,
@@ -403,6 +412,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	// "This surface will be freed when the window is destroyed.
+	//  Do not free this surface."
+	// https://wiki.libsdl.org/SDL_GetWindowSurface
 	SDL_Surface *surface = SDL_GetWindowSurface(window);
 
 	// Initialize window to all background color
@@ -699,11 +711,21 @@ int main(int argc, char *argv[]) {
 		}
 
 		SDL_UpdateWindowSurface(window);
+
+		delete ip;
 	}
 
 	SDL_DestroyWindow(window);
 
 	SDL_Quit();
+
+	if (heightmap != NULL) {
+		delete heightmap;
+	}
+
+	if (colormap != NULL) {
+		stbi_image_free(colormap);
+	}
 
 	return 0;
 }
