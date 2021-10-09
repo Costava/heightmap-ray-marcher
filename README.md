@@ -31,12 +31,18 @@ Orthographic:
 ![Man (orthographic)](https://i.imgur.com/cHbKgmL.png)  
 [Original image](https://unsplash.com/photos/rpF3p_RrE9g)
 
+---
+
 ![White tiger](https://i.imgur.com/EP4EnZ9.png)  
 [Original image](https://unsplash.com/photos/dGMcpbzcq1I)
+
+---
 
 ![Face (close)](https://i.imgur.com/dxoOZgR.png)  
 ![Face (overview)](https://i.imgur.com/YJSp7cq.png)  
 [Original image](https://unsplash.com/photos/sibVwORYqs0)
+
+---
 
 ![Face in leaves (close)](https://i.imgur.com/MQwqKdL.png)  
 ![Face in leaves (overview)](https://i.imgur.com/voGVGgZ.png)  
@@ -86,11 +92,13 @@ Tested with SDL 2.0.16 and glm 0.9.9.8
 
 ## Build and run on Windows
 
-- Download and install [Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads) to get the `CL` C/C++ compiler and `x64 Native Tools Command Prompt`.
+For Windows, these instructions and the build scripts are somewhat stale.
+
+- The `CL` C/C++ compiler and the `x64 Native Tools Command Prompt` (for running `CL` in) are available in the [Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads).
 - - Use `x86 Native Tools Command Prompt` for 32-bit Windows.
 - - More information on these command prompts [here](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line).
-- Get a copy of SDL 2.0.9. Source and builds available [here](https://www.libsdl.org/download-2.0.php) (newer versions likely work also).
-- Download [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html) (newer versions likely work also).
+- SDL 2.0.9 source and builds available [from the SDL site](https://www.libsdl.org/download-2.0.php) (newer versions likely work also).
+- [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html) (newer versions likely work also).
 
 ### Symbolic links
 - In the `src` folder, create a symbolic link named `SDL` targeting your copy of SDL.
