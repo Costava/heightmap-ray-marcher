@@ -534,11 +534,19 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			else if (event.type == SDL_KEYUP) {
+				const SDL_Keymod mod_state = SDL_GetModState();
+
 				switch (event.key.keysym.sym) {
 				case SDLK_ESCAPE:
 					quit = true;
 					break;
 				case SDLK_F11:
+					// Ignore F11 press
+					//  if any of Alt, Shift, Ctrl, etc. are down
+					if (mod_state != KMOD_NONE) {
+						break;
+					}
+
 					fullscreen = !fullscreen;
 
 					if (fullscreen) {
@@ -548,6 +556,7 @@ int main(int argc, char *argv[]) {
 					else {
 						SDL_SetWindowFullscreen(window, 0);
 					}
+
 					break;
 				case SDLK_1:
 					image_plane = 1;
