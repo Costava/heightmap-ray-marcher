@@ -8,7 +8,8 @@ Switch the projection mode with the number keys:
 2. Spherical
 3. Orthographic
 
-Press escape to exit.  
+Press Escape to exit.  
+Press F1 to toggle showing the frames per second.  
 Press F11 to toggle fullscreen.  
 Press F12 to save a screenshot in `screenshots` directory.  
 You can freely resize the window.
@@ -84,37 +85,14 @@ See `sample_config.txt` for an example.
 
 ## Build and run on Linux
 
-Tested with SDL 2.0.16 and glm 0.9.9.8  
-
 1. Clone the repo
-2. Install [SDL2](https://www.libsdl.org/) and [OpenGL Mathematics](https://glm.g-truc.net/) through your package manager e.g. `pamac install sdl2 glm`
+2. Install the dependencies e.g. `pamac install sdl2 glm`
+- - [SDL2](https://www.libsdl.org/) (tested with v2.0.16)
+- - [OpenGL Mathematics](https://glm.g-truc.net/) (tested with v0.9.9.8)
 3. `make build`
 4. Run with `./hmap path/to/config.txt`
 
-## Build and run on Windows
-
-For Windows, these instructions and the build scripts are somewhat stale.
-
-- The `CL` C/C++ compiler and the `x64 Native Tools Command Prompt` (for running `CL` in) are available in the [Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads).
-- - Use `x86 Native Tools Command Prompt` for 32-bit Windows.
-- - More information on these command prompts [here](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line).
-- SDL 2.0.9 source and builds available [from the SDL site](https://www.libsdl.org/download-2.0.php) (newer versions likely work also).
-- [OpenGL Mathematics 0.9.9.3](https://glm.g-truc.net/0.9.9/index.html) (newer versions likely work also).
-
-### Symbolic links
-- In the `src` folder, create a symbolic link named `SDL` targeting your copy of SDL.
-- - `mklink /D src\SDL C:\path\to\SDL2-2.0.9`
-- In the `src` folder, create link `glm` targeting your `glm` folder.
-- - `mklink /D src\glm C:\path\to\glm`
-
-### How to
-`BuildCl.cmd` and `BuildClang.cmd` build the executable for 64-bit Windows using either `CL` or `Clang` respectively.
-
-Run the scripts in the command prompt from above to build. Pass argument `prod` to the scripts for the `WINDOWS` subsystem (no console/printouts when program runs).
-
-Switch `x64` to `x86` for `sdl_lib_path` in `BuildVars.cmd` for 32-bit.
-
-Run the resulting executable `hmap.exe` with a path argument to a config file: `hmap.exe path/to/config.txt`
+Building for other platforms will follow a similar approach.
 
 ## License
 

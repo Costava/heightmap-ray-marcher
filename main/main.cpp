@@ -7,14 +7,7 @@
 #include <sstream>
 #include <string>
 
-#ifdef _WIN32
-	#include <SDL.h>
-#elif defined(__linux)
-	#include <SDL2/SDL.h>
-#else
-	#error Failed to include SDL2
-#endif
-
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
 #include "glm/glm.hpp"
@@ -170,7 +163,7 @@ int main(int argc, char *argv[]) {
 	max_cycle_bits = NUM_UINT_BITS;
 
 	if (argc != 2) {
-		std::cerr << "USAGE: hmap.exe path/to/config.txt" << "\n";
+		std::cerr << "USAGE: hmap.exe path/to/config.txt\n";
 		std::exit(1);
 	}
 
@@ -297,7 +290,7 @@ int main(int argc, char *argv[]) {
 				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
 
 			if (data == NULL) {
-				std::cout << "Failed to load heightmap: " << path << "\n";
+				std::cerr << "Failed to load heightmap: " << path << "\n";
 			}
 			else {
 				const bool no_dimension_conflict = !cmap_specified ||
@@ -348,7 +341,7 @@ int main(int argc, char *argv[]) {
 				path.c_str(), &colormap_width, &colormap_height, &n, 3);
 
 			if (colormap == NULL) {
-				std::cout << "Failed to load colormap: " << path << "\n";
+				std::cerr << "Failed to load colormap: " << path << "\n";
 			}
 			else {
 				const bool no_dimension_conflict = !hmap_specified ||
