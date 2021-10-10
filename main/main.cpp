@@ -14,11 +14,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_NO_HDR
-#define STBI_NO_SIMD
 #include "stb_image.h"
-
 #include "stb_image_write.h"
 
 #include "AABB.hpp"
