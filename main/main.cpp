@@ -1,12 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <climits>
+#include <cstdlib>
 #include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 #ifdef _WIN32
 	#include <SDL.h>
@@ -159,20 +158,20 @@ int main(int argc, char *argv[]) {
 	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
 	if (NUM_INT_BITS != NUM_UINT_BITS) {
-		std::cout
-			<< "Unknown int and unsigned int implementations" << std::endl
-			<< "NUM_INT_BITS: " << NUM_INT_BITS << std::endl
-			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << std::endl;
+		std::cerr
+			<< "Unknown int and unsigned int implementations" << "\n"
+			<< "NUM_INT_BITS: " << NUM_INT_BITS << "\n"
+			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << "\n";
 
-		exit(1);
+		std::exit(1);
 	}
 
 	min_cycle_bits = 2;
 	max_cycle_bits = NUM_UINT_BITS;
 
 	if (argc != 2) {
-		std::cout << "USAGE: hmap.exe path/to/config.txt" << std::endl;
-		exit(1);
+		std::cerr << "USAGE: hmap.exe path/to/config.txt" << "\n";
+		std::exit(1);
 	}
 
 	// Parse input file
@@ -183,8 +182,8 @@ int main(int argc, char *argv[]) {
 	input.open(argv[1]);
 
 	if (!input.is_open()) {
-		std::cout << "Failed to open input file: " << argv[1] << std::endl;
-		exit(1);
+		std::cerr << "Failed to open input file: " << argv[1] << "\n";
+		std::exit(1);
 	}
 
 	std::string next;
@@ -196,8 +195,7 @@ int main(int argc, char *argv[]) {
 
 			input >> width >> height;
 
-			std::cout << "Resolution: " << width << " by " << height
-			          << std::endl;
+			std::cout << "Resolution: " << width << " by " << height << "\n";
 
 			screen_width = width;
 			screen_height = height;
@@ -209,34 +207,34 @@ int main(int argc, char *argv[]) {
 			double new_hfov = (hf / 180.0) * M_PI;
 
 			std::cout << "Horizontal field of view: " << new_hfov << " rads"
-			          << std::endl;
+			          << "\n";
 
 			hfov = new_hfov;
 		}
 		else if (next == "min_height") {
 			input >> min_height;
 
-			std::cout << "min_height: " << min_height << std::endl;
+			std::cout << "min_height: " << min_height << "\n";
 		}
 		else if (next == "max_height") {
 			input >> max_height;
 
-			std::cout << "max_height: " << max_height << std::endl;
+			std::cout << "max_height: " << max_height << "\n";
 		}
 		else if (next == "grid_width") {
 			input >> grid_width;
 
-			std::cout << "grid_width: " << grid_width << std::endl;
+			std::cout << "grid_width: " << grid_width << "\n";
 		}
 		else if (next == "ortho_width") {
 			input >> ortho_width;
 
-			std::cout << "ortho_width: " << ortho_width << std::endl;
+			std::cout << "ortho_width: " << ortho_width << "\n";
 		}
 		else if (next == "step_dist") {
 			input >> step_dist;
 
-			std::cout << "step_dist: " << step_dist << std::endl;
+			std::cout << "step_dist: " << step_dist << "\n";
 		}
 		else if (next == "bg_color") {
 			int r, g, b;
@@ -247,10 +245,10 @@ int main(int argc, char *argv[]) {
 			bg_g = (Uint8)g;
 			bg_b = (Uint8)b;
 
-			std::cout << "New background color:" << std::endl;
-			std::cout << "\tr: " << (int)bg_r << std::endl;
-			std::cout << "\tg: " << (int)bg_g << std::endl;
-			std::cout << "\tb: " << (int)bg_b << std::endl;
+			std::cout << "New background color:" << "\n";
+			std::cout << "\tr: " << (int)bg_r << "\n";
+			std::cout << "\tg: " << (int)bg_g << "\n";
+			std::cout << "\tb: " << (int)bg_b << "\n";
 		}
 		else if (next == "cycle_bits") {
 			int cyc;
@@ -259,32 +257,23 @@ int main(int argc, char *argv[]) {
 
 			if (cyc < 2) {
 				std::cout
-					<< "Ignoring cycle bits "
-					<< cyc
-					<< " because is < 2"
-					<< std::endl;
+					<< "Ignoring cycle bits " << cyc << " because is < 2\n";
 			}
 			else if (cyc % 2 != 0) {
 				std::cout
-					<< "Ignoring cycle bits "
-					<< cyc
-					<< " because is not a multiple of 2"
-					<< std::endl;
+					<< "Ignoring cycle bits " << cyc
+					<< " because is not a multiple of 2\n";
 			}
 			else if ((unsigned int)cyc < min_cycle_bits ||
 			         (unsigned int)cyc > max_cycle_bits)
 			{
 				std::cout
-					<< "Ignoring cycle bits "
-					<< cyc
-					<< " because not in range ["
-					<< min_cycle_bits
-					<< ", "
-					<< max_cycle_bits
-					<< "]" << std::endl;
+					<< "Ignoring cycle bits " << cyc
+					<< " because not in range [" << min_cycle_bits << ", "
+					<< max_cycle_bits << "]\n";
 			}
 			else {
-				std::cout << "Cycle bits: " << cyc << std::endl;
+				std::cout << "Cycle bits: " << cyc << "\n";
 
 				num_bits = cyc;
 
@@ -295,7 +284,7 @@ int main(int argc, char *argv[]) {
 		else if (next == "mouse_sens") {
 			input >> mouse_sens;
 
-			std::cout << "mouse_sens: " << mouse_sens << std::endl;
+			std::cout << "mouse_sens: " << mouse_sens << "\n";
 		}
 		else if (next == "heightmap") {
 			std::string path;
@@ -308,7 +297,7 @@ int main(int argc, char *argv[]) {
 				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
 
 			if (data == NULL) {
-				std::cout << "Failed to load heightmap: " << path << std::endl;
+				std::cout << "Failed to load heightmap: " << path << "\n";
 			}
 			else {
 				const bool no_dimension_conflict = !cmap_specified ||
@@ -331,7 +320,7 @@ int main(int argc, char *argv[]) {
 
 					hmap_specified = true;
 
-					std::cout << "heightmap: " << path << std::endl;
+					std::cout << "heightmap: " << path << "\n";
 				}
 				else {
 					std::cout
@@ -339,8 +328,7 @@ int main(int argc, char *argv[]) {
 						<<  " because dimensions (" << heightmap_width
 						<< "x" << heightmap_height
 						<<  ") do not match colormap dimensions ("
-						<< colormap_width << "x" << colormap_height << ")"
-						<< std::endl;
+						<< colormap_width << "x" << colormap_height << ")\n";
 				}
 
 				stbi_image_free(data);
@@ -360,7 +348,7 @@ int main(int argc, char *argv[]) {
 				path.c_str(), &colormap_width, &colormap_height, &n, 3);
 
 			if (colormap == NULL) {
-				std::cout << "Failed to load colormap: " << path << std::endl;
+				std::cout << "Failed to load colormap: " << path << "\n";
 			}
 			else {
 				const bool no_dimension_conflict = !hmap_specified ||
@@ -370,7 +358,7 @@ int main(int argc, char *argv[]) {
 				if (no_dimension_conflict) {
 					cmap_specified = true;
 
-					std::cout << "colormap: " << path << std::endl;
+					std::cout << "colormap: " << path << "\n";
 				}
 				else {
 					std::cout
@@ -378,45 +366,43 @@ int main(int argc, char *argv[]) {
 						<< " because dimensions (" << colormap_width << "x"
 						<< colormap_height
 						<<  ") do not match heightmap dimensions ("
-						<< heightmap_width << "x" << heightmap_height << ")"
-						<< std::endl;
+						<< heightmap_width << "x" << heightmap_height << ")\n";
 				}
 			}
 		}
 		else {
-			std::cout << "WARNING: Unknown identifier: " << next << std::endl;
+			std::cout << "WARNING: Unknown identifier: " << next << "\n";
 		}
 	}
 
 	input.close();
 
 	if (!hmap_specified || !cmap_specified) {
-		std::cout
-			<< "Must specify both heightmap and colormap paths in input file"
-			<< std::endl;
+		std::cerr
+			<< "Must specify both heightmap and colormap paths in input file\n";
 
-		exit(1);
+		std::exit(1);
 	}
 
 	// Done parsing input file
 
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-		printf("SDL_Init failed: %s\n", SDL_GetError());
-		exit(1);
+		std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
+		std::exit(1);
 	}
 
 	if (TTF_Init() == -1) {
-		std::cout << "TTF_Init failed: " << TTF_GetError() << std::endl;
-		exit(1);
+		std::cerr << "TTF_Init failed: " << TTF_GetError() << "\n";
+		std::exit(1);
 	}
 
 	const char font_path[] = "fonts/NotoSansMono-Regular.ttf";
 	TTF_Font *const font = TTF_OpenFont(font_path, 12);
 
 	if (font == NULL) {
-		std::cout << "Failed to open font at: " << font_path << std::endl;
-		exit(1);
+		std::cerr << "Failed to open font at: " << font_path << "\n";
+		std::exit(1);
 	}
 
 	SDL_Window *const window = SDL_CreateWindow(
@@ -426,8 +412,8 @@ int main(int argc, char *argv[]) {
 		SDL_WINDOW_RESIZABLE);
 
 	if (window == NULL) {
-		printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
-		exit(1);
+		std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
+		std::exit(1);
 	}
 
 	// "This surface will be freed when the window is destroyed.
@@ -439,7 +425,7 @@ int main(int argc, char *argv[]) {
 	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, bg_r, bg_g, bg_b));
 	SDL_UpdateWindowSurface(window);
 
-	srand((unsigned)time(NULL));
+	std::srand((unsigned)std::time(NULL));
 
 	update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
@@ -458,8 +444,9 @@ int main(int argc, char *argv[]) {
 	double ddelta;
 
 	if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
-		printf("Initial SDL_SetRelativeMouseMode failed: %s\n", SDL_GetError());
-		exit(1);
+		std::cerr << "Initial SDL_SetRelativeMouseMode failed: "
+		          << SDL_GetError() << "\n";
+		std::exit(1);
 	}
 
 	while (!quit) {
@@ -515,37 +502,20 @@ int main(int argc, char *argv[]) {
 					//  cleared by the resize
 					SDL_UpdateWindowSurface(window);
 				}
-				else if (event.window.event == SDL_WINDOWEVENT_MOVED) {
-					// printf("SDL_WINDOWEVENT_MOVED\n");
-				}
 				else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-					// printf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
-
 					if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
-						std::cout
+						std::cerr
 							<< "FOCUS_GAINED SDL_SetRelativeMouseMode failed: "
-							<< SDL_GetError() << std::endl;
-
-						exit(1);
+							<< SDL_GetError() << "\n";
 					}
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-					// printf("SDL_WINDOWEVENT_FOCUS_LOST\n");
-
 					if (SDL_SetRelativeMouseMode(SDL_FALSE)) {
-						std::cout
+						std::cerr
 							<< "FOCUS_LOST SDL_SetRelativeMouseMode failed: "
-							<< SDL_GetError() << std::endl;
-
-						exit(1);
+							<< SDL_GetError() << "\n";
 					}
 				}
-			}
-			else if (event.type == SDL_MOUSEBUTTONDOWN) {
-				// printf("SDL_MOUSEBUTTONDOWN\n");
-			}
-			else if (event.type == SDL_MOUSEBUTTONUP) {
-				// printf("SDL_MOUSEBUTTONUP\n");
 			}
 			else if (event.type == SDL_MOUSEMOTION) {
 				hang -= mouse_sens * event.motion.xrel * ddelta;
@@ -600,10 +570,12 @@ int main(int argc, char *argv[]) {
 						// I will assume I do not need to free it.
 						// https://wiki.libsdl.org/SDL_GetPixelFormatName
 
-						printf("Unhandled PixelFormat %s has BytesPerPixel=%d. "
-							"Screenshot NOT saved.\n",
-							SDL_GetPixelFormatName(surface->format->format),
-							surface->format->BytesPerPixel);
+						std::cerr
+							<< "Unhandled PixelFormat "
+							<< SDL_GetPixelFormatName(surface->format->format)
+							<< " has BytesPerPixel="
+							<< surface->format->BytesPerPixel
+							<< ". Screenshot NOT saved.\n";
 
 						break;
 					}
@@ -611,19 +583,16 @@ int main(int argc, char *argv[]) {
 					std::time_t seconds = std::time(NULL);
 
 					if (seconds == (std::time_t)(-1)) {
-						std::cout
+						std::cerr
 							<< "Failed to get time for screenshot. "
-							<< "Screenshot NOT saved."
-							<< std::endl;
+							<< "Screenshot NOT saved.\n";
 
 						break;
 					}
 
-					#define MAIN_SCREENSHOT_PATH_LEN 512
-					char path[MAIN_SCREENSHOT_PATH_LEN];
-
-					snprintf(path, MAIN_SCREENSHOT_PATH_LEN,
-						"screenshots/hmap_%ld.png", seconds);
+					std::stringstream ss;
+					ss << "screenshots/hmap_" << seconds << ".png";
+					std::string path = ss.str();
 
 					Uint8 *const data = new Uint8[surface->w * surface->h * 3];
 
@@ -636,15 +605,16 @@ int main(int argc, char *argv[]) {
 							&data[i * 3 + 2]);
 					}
 
-					const int code = stbi_write_png(path,
+					const int code = stbi_write_png(path.c_str(),
 						surface->w, surface->h, 3,
 						data, surface->w * 3);
 
 					if (code == 0) {
-						std::cout << "Failed to write screenshot." << std::endl;
+						std::cerr
+							<< "Failed to write screenshot to " << path << "\n";
 					}
 					else {
-						printf("Wrote screenshot: %s\n", path);
+						std::cout << "Saved screenshot at " << path << "\n";
 					}
 
 					delete data;
@@ -660,8 +630,6 @@ int main(int argc, char *argv[]) {
 					image_plane = 3;
 					break;
 				default:
-					// printf("non-escape keyup: %d %s\n", event.key.keysym.sym,
-					// 	SDL_GetKeyName(event.key.keysym.sym));
 					break;
 				}
 			}
@@ -690,9 +658,11 @@ int main(int argc, char *argv[]) {
 			cam_pos.z -= ddelta * move_mult;
 		}
 
-		// std::cout << "cam_pos: " << glm::to_string(cam_pos) << std::endl;
-		// std::cout << "hang vang: " << hang << " " << vang << std::endl;
-		// std::cout << "up: " << glm::to_string(up) << std::endl;
+		// std::cout
+		// 	<< "cam_pos: " << glm::to_string(cam_pos) << "\n"
+		// 	<< "hang vang: " << hang << " " << vang << "\n"
+		// 	<< "up: " << glm::to_string(up) << "\n"
+		// 	<< std::flush;
 
 		ImagePlane *ip;
 
@@ -819,12 +789,11 @@ int main(int argc, char *argv[]) {
 
 			const double fps = 1000.0 / ddelta;
 
-			#define MAIN_FPS_TEXT_LEN 512
-			char text[MAIN_FPS_TEXT_LEN];
-			snprintf(text, MAIN_FPS_TEXT_LEN, "FPS: %.1lf", fps);
+			std::stringstream ss;
+			ss << "FPS: " << std::fixed << std::setprecision(1) << fps;
 
 			SDL_FreeSurface(fps_surface);
-			fps_surface = TTF_RenderUTF8_Shaded(font, text, fg, bg);
+			fps_surface = TTF_RenderUTF8_Shaded(font, ss.str().c_str(), fg, bg);
 		}
 
 		if (show_fps) {
