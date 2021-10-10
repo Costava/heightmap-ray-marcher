@@ -16,6 +16,8 @@
 	#error Failed to include SDL2
 #endif
 
+#include <SDL2/SDL_ttf.h>
+
 #include "glm/glm.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
@@ -404,6 +406,19 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	if (TTF_Init() == -1) {
+		std::cout << "TTF_Init failed: " << TTF_GetError() << std::endl;
+		exit(1);
+	}
+
+	const char font_path[] = "fonts/NotoSansMono-Regular.ttf";
+	TTF_Font *const font = TTF_OpenFont(font_path, 12);
+
+	if (font == NULL) {
+		std::cout << "Failed to open font at: " << font_path << std::endl;
+		exit(1);
+	}
+
 	SDL_Window *const window = SDL_CreateWindow(
 		"Heightmap Ray Marcher",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -429,6 +444,13 @@ int main(int argc, char *argv[]) {
 	update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
 	bool quit = false;
+	bool show_fps = false;
+
+	SDL_Surface *fps_surface = NULL;
+	// To avoid the FPS counter changing too frequently to be readable,
+	//  update the FPS only every X ms.
+	const Uint32 fps_surface_rerender_period_ms = 200;
+	Uint32 fps_surface_rerender_timer_ms = fps_surface_rerender_period_ms + 1;
 
 	Uint32 old_time = SDL_GetTicks();// milliseconds
 	Uint32 new_time;
@@ -446,7 +468,7 @@ int main(int argc, char *argv[]) {
 		ddelta = (double)delta;
 		old_time = new_time;
 
-		std::cout << "FPS: " << 1000.0 / ddelta << std::endl;
+		fps_surface_rerender_timer_ms += delta;
 
 		// Converting spherical coordinates to a vector
 		// r = 1 so not shown and no need to normalize the vector
@@ -494,10 +516,10 @@ int main(int argc, char *argv[]) {
 					SDL_UpdateWindowSurface(window);
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_MOVED) {
-					printf("SDL_WINDOWEVENT_MOVED\n");
+					// printf("SDL_WINDOWEVENT_MOVED\n");
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-					printf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
+					// printf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
 
 					if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
 						std::cout
@@ -508,7 +530,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-					printf("SDL_WINDOWEVENT_FOCUS_LOST\n");
+					// printf("SDL_WINDOWEVENT_FOCUS_LOST\n");
 
 					if (SDL_SetRelativeMouseMode(SDL_FALSE)) {
 						std::cout
@@ -543,6 +565,11 @@ int main(int argc, char *argv[]) {
 				case SDLK_ESCAPE:
 					quit = true;
 					break;
+				case SDLK_F1:
+				{
+					show_fps = !show_fps;
+					break;
+				}
 				case SDLK_F11:
 					// Ignore F11 press
 					//  if any of Alt, Shift, Ctrl, etc. are down
@@ -784,13 +811,42 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
+		if (fps_surface_rerender_timer_ms >= fps_surface_rerender_period_ms) {
+			fps_surface_rerender_timer_ms = 0;
+
+			SDL_Color fg = {255, 255, 255, 255};
+			SDL_Color bg = {0, 0, 0, 255};
+
+			const double fps = 1000.0 / ddelta;
+
+			#define MAIN_FPS_TEXT_LEN 512
+			char text[MAIN_FPS_TEXT_LEN];
+			snprintf(text, MAIN_FPS_TEXT_LEN, "FPS: %.1lf", fps);
+
+			SDL_FreeSurface(fps_surface);
+			fps_surface = TTF_RenderUTF8_Shaded(font, text, fg, bg);
+		}
+
+		if (show_fps) {
+			if (fps_surface == NULL) {
+				break;
+			}
+
+			SDL_BlitSurface(fps_surface, NULL, surface, NULL);
+		}
+
 		SDL_UpdateWindowSurface(window);
 
 		delete ip;
-	}
+	} // while (!quit)
+
+	SDL_FreeSurface(fps_surface);
 
 	SDL_DestroyWindow(window);
 
+	TTF_CloseFont(font);
+
+	TTF_Quit();
 	SDL_Quit();
 
 	if (heightmap != NULL) {
