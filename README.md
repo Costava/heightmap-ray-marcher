@@ -86,8 +86,9 @@ See `sample_config.txt` for an example.
 ## Build and run on Linux
 
 1. Clone the repo
-2. Install the dependencies e.g. `pamac install sdl2 glm`
-- - [SDL2](https://www.libsdl.org/) (tested with v2.0.16)
+2. Install the dependencies e.g. `pamac install sdl2 sdl2_ttf glm`
+- - [SDL](https://www.libsdl.org/) (tested with v2.0.16)
+- - [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/) (tested with v2.0.15)
 - - [OpenGL Mathematics](https://glm.g-truc.net/) (tested with v0.9.9.8)
 3. `make build`
 4. Run with `./hmap path/to/config.txt`
