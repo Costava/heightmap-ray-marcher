@@ -96,7 +96,11 @@ Building for other platforms will follow a similar approach.
 
 ## License
 
-GNU General Public License v3. See file `LICENSE`.
+Files original to this repo are under the BSD 2-Clause License.
+See file `LICENSE.txt`.
+
+Files under `vendor` and `fonts` have their own licenses.
+See those directories for details.
 
 ## Contributing
 
