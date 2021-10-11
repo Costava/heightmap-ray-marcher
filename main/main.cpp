@@ -375,16 +375,31 @@ int main(int argc, char *argv[]) {
 
 	// Done parsing input file
 
-	// Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-		std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
-		std::exit(1);
-	}
+	class ManageSDL {
+	public:
+		ManageSDL() {
+			if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+				std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
+				std::exit(1);
+			}
+		}
 
-	if (TTF_Init() == -1) {
-		std::cerr << "TTF_Init failed: " << TTF_GetError() << "\n";
-		std::exit(1);
-	}
+		~ManageSDL() { SDL_Quit(); }
+	};
+	const ManageSDL manage_sdl;
+
+	class ManageTTF {
+	public:
+		ManageTTF() {
+			if (TTF_Init() != 0) {
+				std::cerr << "TTF_Init failed: " << TTF_GetError() << "\n";
+				std::exit(1);
+			}
+		}
+
+		~ManageTTF() { TTF_Quit(); }
+	};
+	const ManageTTF manage_ttf;
 
 	const char font_path[] = "fonts/NotoSansMono-Regular.ttf";
 	TTF_Font *const font = TTF_OpenFont(font_path, 12);
@@ -803,9 +818,6 @@ int main(int argc, char *argv[]) {
 	SDL_DestroyWindow(window);
 
 	TTF_CloseFont(font);
-
-	TTF_Quit();
-	SDL_Quit();
 
 	if (heightmap != NULL) {
 		delete heightmap;

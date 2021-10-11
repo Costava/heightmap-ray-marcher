@@ -16,7 +16,7 @@ tmp/stb_image.o: vendor/stb_image.c vendor/stb_image.h | tmp
 tmp/stb_image_write.o: vendor/stb_image_write.c vendor/stb_image_write.h | tmp
 	gcc --output $@ -std=c99 -c -w vendor/stb_image_write.c
 
-hmap: main/main.cpp src/*.cpp src/*.hpp tmp/stb_image.o tmp/stb_image_write.o
+hmap: main/main.cpp src/* vendor/* tmp/stb_image.o tmp/stb_image_write.o
 	g++ --output $@ -std=c++98 -Wall -Wextra -Wconversion                      \
 	-I ./src -I ./vendor                                                       \
 	-lSDL2 -lSDL2_ttf -lGL                                                     \
