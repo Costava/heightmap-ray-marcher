@@ -23,6 +23,8 @@
 #include "Spherical.hpp"
 #include "Orthographic.hpp"
 
+SDL_Window *window = NULL;
+
 // Window content dimensions (pixels)
 int screen_width = 512;
 int screen_height = 512;
@@ -169,15 +171,14 @@ void ConsumeConfigStream(std::istream &input) {
 	std::string next;
 	while (input >> next) {
 		if (next == "resolution") {
-			int width;
-			int height;
+			input >> screen_width >> screen_height;
 
-			input >> width >> height;
+			if (window != NULL) {
+				SDL_SetWindowSize(window, screen_width, screen_height);
+			}
 
-			std::cout << "resolution: " << width << " by " << height << "\n";
-
-			screen_width = width;
-			screen_height = height;
+			std::cout << "resolution: "
+			          << screen_width << " by " << screen_height << "\n";
 		}
 		else if (next == "hfov") {
 			double hf;
@@ -465,7 +466,7 @@ int main(int argc, char *argv[]) {
 		std::exit(1);
 	}
 
-	SDL_Window *const window = SDL_CreateWindow(
+	window = SDL_CreateWindow(
 		"Heightmap Ray Marcher",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		screen_width, screen_height,

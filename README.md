@@ -63,7 +63,6 @@ Orthographic:
 - All config file options are optional except `heightmap` and `colormap`
 - Input to many options is not validated and handling parsing is not robust.
 - Do NOT use file paths that include spaces.
-- Not all commands work at runtime.
 
 See `sample_config.txt` for an example.
 
