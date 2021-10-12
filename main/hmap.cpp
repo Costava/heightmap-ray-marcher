@@ -34,13 +34,23 @@ double hfov = M_PI / 2.0;
 double min_height = 0.0;
 double max_height = 10.0;
 
-// Array of heights
+// If base_heightmap_buf has components RGB,
+// then these lum values are used for (rR + gG +bB),
+// clamped to range [0.0, 255.0],
+// then scaled to range [min_height, max_height]
+double lum_r = 0.299;
+double lum_g = 0.587;
+double lum_b = 0.114;
+
+// BGR888 (R first component in buffer)
+const unsigned char *base_heightmap_buf = NULL;
+// Array of heights in range [min_height, max_height]
 double *heightmap_buf = NULL;
 int heightmap_width;
 int heightmap_height;
 
 // Array of RGB unsigned char values
-unsigned char *colormap_buf = NULL;
+const unsigned char *colormap_buf = NULL;
 int colormap_width;
 int colormap_height;
 
@@ -96,6 +106,14 @@ Uint8 bg_r = 0;
 Uint8 bg_g = 0;
 Uint8 bg_b = 0;
 
+template<class T>
+T Clamp(const T value, const T min, const T max) {
+	if (value < min) return min;
+	if (value > max) return max;
+
+	return value;
+}
+
 double DegreesToRads(const double degrees) {
 	return (degrees / 180.0) * M_PI;
 }
@@ -146,6 +164,8 @@ void UpdateCycleVars(
 
 // Read stream until end and update config values
 void ConsumeConfigStream(std::istream &input) {
+	bool should_update_heightmap = false;
+
 	std::string next;
 	while (input >> next) {
 		if (next == "resolution") {
@@ -199,12 +219,12 @@ void ConsumeConfigStream(std::istream &input) {
 		}
 		else if (next == "min_height") {
 			input >> min_height;
-
+			should_update_heightmap = true;
 			std::cout << "min_height: " << min_height << "\n";
 		}
 		else if (next == "max_height") {
 			input >> max_height;
-
+			should_update_heightmap = true;
 			std::cout << "max_height: " << max_height << "\n";
 		}
 		else if (next == "grid_width") {
@@ -278,27 +298,18 @@ void ConsumeConfigStream(std::istream &input) {
 
 			int n;
 
-			// Load image as greyscale
-			const unsigned char *const data = stbi_load(
-				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
+			stbi_image_free((void*)base_heightmap_buf);
+			base_heightmap_buf = stbi_load(
+				path.c_str(), &heightmap_width, &heightmap_height, &n, 3);
 
-			if (data == NULL) {
+			if (base_heightmap_buf == NULL) {
 				std::cerr
 					<< "Failed to load image for heightmap from "
 					<< path << "\n";
 				std::exit(1);
 			}
 
-			const int length = heightmap_width * heightmap_height;
-			delete heightmap_buf;
-			heightmap_buf = new double[length];
-
-			for (int i = 0; i < length; i += 1) {
-				heightmap_buf[i] = ((double)data[i] / 255.0)
-					* (max_height - min_height) + min_height;
-			}
-
-			stbi_image_free((void*)data);
+			should_update_heightmap = true;
 
 			std::cout << "heightmap: " << path << "\n";
 		}
@@ -308,7 +319,7 @@ void ConsumeConfigStream(std::istream &input) {
 
 			int n;
 
-			stbi_image_free(colormap_buf);
+			stbi_image_free((void*)colormap_buf);
 			colormap_buf = stbi_load(
 				path.c_str(), &colormap_width, &colormap_height, &n, 3);
 
@@ -324,6 +335,56 @@ void ConsumeConfigStream(std::istream &input) {
 		else {
 			std::cout << "WARNING: Unknown identifier: " << next << "\n";
 		}
+	}
+
+	// Some validation
+
+	if (base_heightmap_buf == NULL) {
+		std::cerr << "Must specify heightmap in config\n";
+		std::exit(1);
+	}
+
+	if (colormap_buf == NULL) {
+		std::cerr << "Must specify colormap in config\n";
+		std::exit(1);
+	}
+
+	const bool dimensions_conflict =
+		(heightmap_width  != colormap_width) ||
+		(heightmap_height != colormap_height);
+
+	if (dimensions_conflict) {
+		std::cerr
+			<< "heightmap dimensions (" << heightmap_width
+			<< "x" << heightmap_height
+			<<  ") must match colormap dimensions ("
+			<< colormap_width << "x" << colormap_height << ")\n";
+
+		std::exit(1);
+	}
+
+	if (!should_update_heightmap) {
+		return;
+	}
+
+	const int num_pixels = heightmap_width * heightmap_height;
+	delete heightmap_buf;
+	heightmap_buf = new double[num_pixels];
+
+	int p = 0;
+	for (int i = 0; i < num_pixels * 3; i += 3) {
+		const unsigned char r = base_heightmap_buf[i + 0];
+		const unsigned char g = base_heightmap_buf[i + 1];
+		const unsigned char b = base_heightmap_buf[i + 2];
+
+		const double value = Clamp<double>(
+			(lum_r * r) + (lum_g * g) + (lum_b * b),
+			0.0, 255.0
+		);
+
+		heightmap_buf[p] = (value / 255.0)
+		                   * (max_height - min_height) + min_height;
+		p += 1;
 	}
 }
 
@@ -361,32 +422,6 @@ int main(int argc, char *argv[]) {
 	ConsumeConfigStream(input);
 
 	input.close();
-
-	// Some validation
-
-	if (heightmap_buf == NULL) {
-		std::cerr << "Must specify heightmap in config\n";
-		std::exit(1);
-	}
-
-	if (colormap_buf == NULL) {
-		std::cerr << "Must specify colormap in config\n";
-		std::exit(1);
-	}
-
-	const bool dimensions_conflict =
-		(heightmap_width  != colormap_width) ||
-		(heightmap_height != colormap_height);
-
-	if (dimensions_conflict) {
-		std::cerr
-			<< "heightmap dimensions (" << heightmap_width
-			<< "x" << heightmap_height
-			<<  ") must match colormap dimensions ("
-			<< colormap_width << "x" << colormap_height << ")\n";
-
-		std::exit(1);
-	}
 
 	// Initialize libraries
 
@@ -893,13 +928,15 @@ int main(int argc, char *argv[]) {
 	} // while (!quit)
 
 	SDL_FreeSurface(fps_surface);
+	SDL_FreeSurface(console_surface);
 
 	SDL_DestroyWindow(window);
 
 	TTF_CloseFont(font);
 
+	stbi_image_free((void*)base_heightmap_buf);
 	delete heightmap_buf;
-	stbi_image_free(colormap_buf);
+	stbi_image_free((void*)colormap_buf);
 
 	return 0;
 }
