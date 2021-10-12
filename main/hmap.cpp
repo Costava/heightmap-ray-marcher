@@ -85,9 +85,11 @@ double hang = -M_PI / 4.0;
 // pi / 2 is looking parallel to xy plane
 double vang = M_PI / 2.0;
 
-// Multiplier for how many radians to turn
-// For both horizontal and vertical mouse sensitivity
+// Horizontal and vertical mouse sensitivity
 double mouse_sens = 0.00003;
+
+// Unit is units/millisecond
+double move_speed = 0.01;
 
 // Render only part of the screen in a single frame
 // Keep track of which part to render next
@@ -296,8 +298,11 @@ void ConsumeConfigStream(std::istream &input) {
 		}
 		else if (next == "mouse_sens") {
 			input >> mouse_sens;
-
 			std::cout << "mouse_sens: " << mouse_sens << "\n";
+		}
+		else if (next == "move") {
+			input >> move_speed;
+			std::cout << "move: " << move_speed << "\n";
 		}
 		else if (next == "heightmap") {
 			std::string path;
@@ -747,25 +752,23 @@ int main(int argc, char *argv[]) {
 		const Uint8 *const kb_state = SDL_GetKeyboardState(NULL);
 
 		if (!console_active) {
-			const double move_mult = 0.01;
-
 			if (kb_state[SDL_SCANCODE_W]) {
-				cam_pos += ddelta * move_mult * forward;
+				cam_pos += ddelta * move_speed * forward;
 			}
 			if (kb_state[SDL_SCANCODE_S]) {
-				cam_pos -= ddelta * move_mult * forward;
+				cam_pos -= ddelta * move_speed * forward;
 			}
 			if (kb_state[SDL_SCANCODE_D]) {
-				cam_pos += ddelta * move_mult * right;
+				cam_pos += ddelta * move_speed * right;
 			}
 			if (kb_state[SDL_SCANCODE_A]) {
-				cam_pos -= ddelta * move_mult * right;
+				cam_pos -= ddelta * move_speed * right;
 			}
 			if (kb_state[SDL_SCANCODE_SPACE]) {
-				cam_pos.z += ddelta * move_mult;
+				cam_pos.z += ddelta * move_speed;
 			}
 			if (kb_state[SDL_SCANCODE_LSHIFT]) {
-				cam_pos.z -= ddelta * move_mult;
+				cam_pos.z -= ddelta * move_speed;
 			}
 		}
 
