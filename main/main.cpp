@@ -34,13 +34,13 @@ double hfov = M_PI / 2.0;
 double min_height = 0.0;
 double max_height = 10.0;
 
-// Pointer to double array of heights
-double *heightmap = NULL;
+// Array of heights
+double *heightmap_buf = NULL;
 int heightmap_width;
 int heightmap_height;
 
 // Array of RGB unsigned char values
-unsigned char *colormap = NULL;
+unsigned char *colormap_buf = NULL;
 int colormap_width;
 int colormap_height;
 
@@ -86,27 +86,27 @@ bool fullscreen = false;
 // How far apart the orthographic rays are
 double ortho_width = 10.0 * grid_width;
 
-// 1: Perspective
-// 2: Spherical
-// 3: Orthographic
-int image_plane = 1;
+#define IMAGEPLANE_PERSPECTIVE  1
+#define IMAGEPLANE_SPHERICAL    2
+#define IMAGEPLANE_ORTHOGRAPHIC 3
+int image_plane = IMAGEPLANE_PERSPECTIVE;
 
 // Background color
 Uint8 bg_r = 0;
 Uint8 bg_g = 0;
 Uint8 bg_b = 0;
 
-// Return val clamped within range [min, max]
-int clamp(const int val, const int min, const int max) {
-	if (val < min) return min;
-	if (val > max) return max;
+double DegreesToRads(const double degrees) {
+	return (degrees / 180.0) * M_PI;
+}
 
-	return val;
+double RadsToDegrees(const double rads) {
+	return (rads / M_PI) * 180.0;
 }
 
 // This makes assumptions about the format of the surface
 // Could be improved to be more robust (but likely less performant)
-void set_pixel(
+void SetPixel(
 	SDL_Surface *const surface,
 	const int x,
 	const int y,
@@ -114,10 +114,12 @@ void set_pixel(
 	const Uint8 g,
 	const Uint8 b)
 {
+	// Assume BytesPerPixel==4
 	Uint32 *const pixels = (Uint32 *) surface->pixels;
 
 	const Uint32 color = SDL_MapRGB(surface->format, r, g, b);
 
+	// Assume pitch has no dead space
 	pixels[x + (y * surface->w)] = color;
 }
 
@@ -126,7 +128,7 @@ unsigned int min_cycle_bits;
 unsigned int max_cycle_bits;
 
 // Update variables related to the render cycle based on using num_bits
-void update_cycle_vars(
+void UpdateCycleVars(
 	const unsigned int num_bits,
 	unsigned int *const shift_amt,
 	unsigned int *const full_mask,
@@ -142,41 +144,9 @@ void update_cycle_vars(
 	*incr = *half_mask + 1;
 }
 
-int main(int argc, char *argv[]) {
-	const unsigned int NUM_INT_BITS = 8 * sizeof(int);
-	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
-
-	if (NUM_INT_BITS != NUM_UINT_BITS) {
-		std::cerr
-			<< "Unknown int and unsigned int implementations" << "\n"
-			<< "NUM_INT_BITS: " << NUM_INT_BITS << "\n"
-			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << "\n";
-
-		std::exit(1);
-	}
-
-	min_cycle_bits = 2;
-	max_cycle_bits = NUM_UINT_BITS;
-
-	if (argc != 2) {
-		std::cerr << "USAGE: hmap.exe path/to/config.txt\n";
-		std::exit(1);
-	}
-
-	// Parse input file
-	bool hmap_specified = false;
-	bool cmap_specified = false;
-
-	std::ifstream input;
-	input.open(argv[1]);
-
-	if (!input.is_open()) {
-		std::cerr << "Failed to open input file: " << argv[1] << "\n";
-		std::exit(1);
-	}
-
+// Read stream until end and update config values
+void ConsumeConfigStream(std::istream &input) {
 	std::string next;
-
 	while (input >> next) {
 		if (next == "resolution") {
 			int width;
@@ -184,7 +154,7 @@ int main(int argc, char *argv[]) {
 
 			input >> width >> height;
 
-			std::cout << "Resolution: " << width << " by " << height << "\n";
+			std::cout << "resolution: " << width << " by " << height << "\n";
 
 			screen_width = width;
 			screen_height = height;
@@ -193,12 +163,39 @@ int main(int argc, char *argv[]) {
 			double hf;
 			input >> hf;
 
-			double new_hfov = (hf / 180.0) * M_PI;
+			double new_hfov = DegreesToRads(hf);
 
-			std::cout << "Horizontal field of view: " << new_hfov << " rads"
+			std::cout << "hfov: " << hf << " degrees"
 			          << "\n";
 
 			hfov = new_hfov;
+		}
+		else if (next == "hang") {
+			double deg;
+			input >> deg;
+
+			hang = DegreesToRads(deg);
+		}
+		else if (next == "vang") {
+			double deg;
+			input >> deg;
+
+			vang = DegreesToRads(deg);
+		}
+		else if (next == "pos") {
+			double x, y, z;
+			input >> x >> y >> z;
+
+			cam_pos.x = x;
+			cam_pos.y = y;
+			cam_pos.z = z;
+		}
+		else if (next == "print_pos") {
+			std::cout
+				<< "pos: " << glm::to_string(cam_pos) << "\n"
+				<< "hang vang: "
+				<< RadsToDegrees(hang) << " " << RadsToDegrees(vang) << "\n"
+				<< std::flush;
 		}
 		else if (next == "min_height") {
 			input >> min_height;
@@ -234,7 +231,7 @@ int main(int argc, char *argv[]) {
 			bg_g = (Uint8)g;
 			bg_b = (Uint8)b;
 
-			std::cout << "New background color:" << "\n";
+			std::cout << "bg_color:" << "\n";
 			std::cout << "\tr: " << (int)bg_r << "\n";
 			std::cout << "\tg: " << (int)bg_g << "\n";
 			std::cout << "\tb: " << (int)bg_b << "\n";
@@ -262,11 +259,11 @@ int main(int argc, char *argv[]) {
 					<< max_cycle_bits << "]\n";
 			}
 			else {
-				std::cout << "Cycle bits: " << cyc << "\n";
+				std::cout << "cycle bits: " << cyc << "\n";
 
 				num_bits = cyc;
 
-				update_cycle_vars(
+				UpdateCycleVars(
 					num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 			}
 		}
@@ -282,46 +279,28 @@ int main(int argc, char *argv[]) {
 			int n;
 
 			// Load image as greyscale
-			unsigned char *const data = stbi_load(
+			const unsigned char *const data = stbi_load(
 				path.c_str(), &heightmap_width, &heightmap_height, &n, 1);
 
 			if (data == NULL) {
-				std::cerr << "Failed to load heightmap: " << path << "\n";
+				std::cerr
+					<< "Failed to load image for heightmap from "
+					<< path << "\n";
+				std::exit(1);
 			}
-			else {
-				const bool no_dimension_conflict = !cmap_specified ||
-					(heightmap_width  == colormap_width &&
-					 heightmap_height == colormap_height);
 
-				if (no_dimension_conflict) {
-					const int LENGTH = heightmap_width * heightmap_height;
+			const int length = heightmap_width * heightmap_height;
+			delete heightmap_buf;
+			heightmap_buf = new double[length];
 
-					if (heightmap != NULL) {
-						delete heightmap;
-					}
-
-					heightmap = new double[LENGTH];
-
-					for (int i = 0; i < LENGTH; ++i) {
-						heightmap[i] = ((double)data[i] / 255.0)
-							* (max_height - min_height) + min_height;
-					}
-
-					hmap_specified = true;
-
-					std::cout << "heightmap: " << path << "\n";
-				}
-				else {
-					std::cout
-						<< "Ignoring heightmap at " << path
-						<<  " because dimensions (" << heightmap_width
-						<< "x" << heightmap_height
-						<<  ") do not match colormap dimensions ("
-						<< colormap_width << "x" << colormap_height << ")\n";
-				}
-
-				stbi_image_free(data);
+			for (int i = 0; i < length; i += 1) {
+				heightmap_buf[i] = ((double)data[i] / 255.0)
+					* (max_height - min_height) + min_height;
 			}
+
+			stbi_image_free((void*)data);
+
+			std::cout << "heightmap: " << path << "\n";
 		}
 		else if (next == "colormap") {
 			std::string path;
@@ -329,51 +308,87 @@ int main(int argc, char *argv[]) {
 
 			int n;
 
-			if (colormap != NULL) {
-				stbi_image_free(colormap);
-			}
-
-			colormap = stbi_load(
+			stbi_image_free(colormap_buf);
+			colormap_buf = stbi_load(
 				path.c_str(), &colormap_width, &colormap_height, &n, 3);
 
-			if (colormap == NULL) {
-				std::cerr << "Failed to load colormap: " << path << "\n";
+			if (colormap_buf == NULL) {
+				std::cerr
+					<< "Failed to load image for colormap from "
+					<< path << "\n";
+				std::exit(1);
 			}
-			else {
-				const bool no_dimension_conflict = !hmap_specified ||
-					(heightmap_width  == colormap_width &&
-					 heightmap_height == colormap_height);
 
-				if (no_dimension_conflict) {
-					cmap_specified = true;
-
-					std::cout << "colormap: " << path << "\n";
-				}
-				else {
-					std::cout
-						<< "Ignoring colormap at " << path
-						<< " because dimensions (" << colormap_width << "x"
-						<< colormap_height
-						<<  ") do not match heightmap dimensions ("
-						<< heightmap_width << "x" << heightmap_height << ")\n";
-				}
-			}
+			std::cout << "colormap: " << path << "\n";
 		}
 		else {
 			std::cout << "WARNING: Unknown identifier: " << next << "\n";
 		}
 	}
+}
 
-	input.close();
+int main(int argc, char *argv[]) {
+	const unsigned int NUM_INT_BITS = 8 * sizeof(int);
+	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
 
-	if (!hmap_specified || !cmap_specified) {
+	if (NUM_INT_BITS != NUM_UINT_BITS) {
 		std::cerr
-			<< "Must specify both heightmap and colormap paths in input file\n";
+			<< "Unknown int and unsigned int implementations" << "\n"
+			<< "NUM_INT_BITS: " << NUM_INT_BITS << "\n"
+			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << "\n";
 
 		std::exit(1);
 	}
 
-	// Done parsing input file
+	min_cycle_bits = 2;
+	max_cycle_bits = NUM_UINT_BITS;
+
+	if (argc != 2) {
+		std::cerr << "USAGE: hmap.exe path/to/config.txt\n";
+		std::exit(1);
+	}
+
+	// Parse input file
+
+	std::ifstream input;
+	input.open(argv[1]);
+
+	if (!input.is_open()) {
+		std::cerr << "Failed to open input file: " << argv[1] << "\n";
+		std::exit(1);
+	}
+
+	ConsumeConfigStream(input);
+
+	input.close();
+
+	// Some validation
+
+	if (heightmap_buf == NULL) {
+		std::cerr << "Must specify heightmap in config\n";
+		std::exit(1);
+	}
+
+	if (colormap_buf == NULL) {
+		std::cerr << "Must specify colormap in config\n";
+		std::exit(1);
+	}
+
+	const bool dimensions_conflict =
+		(heightmap_width  != colormap_width) ||
+		(heightmap_height != colormap_height);
+
+	if (dimensions_conflict) {
+		std::cerr
+			<< "heightmap dimensions (" << heightmap_width
+			<< "x" << heightmap_height
+			<<  ") must match colormap dimensions ("
+			<< colormap_width << "x" << colormap_height << ")\n";
+
+		std::exit(1);
+	}
+
+	// Initialize libraries
 
 	class ManageSDL {
 	public:
@@ -431,16 +446,22 @@ int main(int argc, char *argv[]) {
 
 	std::srand((unsigned)std::time(NULL));
 
-	update_cycle_vars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
+	UpdateCycleVars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
 	bool quit = false;
 	bool show_fps = false;
 
 	SDL_Surface *fps_surface = NULL;
-	// To avoid the FPS counter changing too frequently to be readable,
-	//  update the FPS only every X ms.
-	const Uint32 fps_surface_rerender_period_ms = 200;
-	Uint32 fps_surface_rerender_timer_ms = fps_surface_rerender_period_ms + 1;
+	SDL_Surface *console_surface = NULL;
+
+	// To avoid the text changing too frequently to be readable,
+	//  update the text only every X ms.
+	const Uint32 text_surface_rerender_period_ms = 200;
+	Uint32 text_surface_rerender_timer_ms = text_surface_rerender_period_ms + 1;
+
+	bool console_active = false;
+	std::string console_buf;
+	console_buf.assign(" ");
 
 	Uint32 old_time = SDL_GetTicks();// milliseconds
 	Uint32 new_time;
@@ -459,7 +480,7 @@ int main(int argc, char *argv[]) {
 		ddelta = (double)delta;
 		old_time = new_time;
 
-		fps_surface_rerender_timer_ms += delta;
+		text_surface_rerender_timer_ms += delta;
 
 		// Converting spherical coordinates to a vector
 		// r = 1 so not shown and no need to normalize the vector
@@ -532,10 +553,43 @@ int main(int argc, char *argv[]) {
 					vang = M_PI;
 				}
 			}
+			else if (event.type == SDL_TEXTINPUT && console_active) {
+				console_buf.append(event.text.text);
+			}
 			else if (event.type == SDL_KEYUP) {
 				const SDL_Keymod mod_state = SDL_GetModState();
 
 				switch (event.key.keysym.sym) {
+				case SDLK_BACKQUOTE:
+				{
+					console_active = !console_active;
+
+					if (console_active) {
+						console_buf.assign(" ");
+					}
+
+					break;
+				}
+				case SDLK_BACKSPACE:
+				{
+					// Do not permit deleting the leading space
+					if (console_active && console_buf.length() > 1) {
+						console_buf.erase(console_buf.length() - 1, 1);
+					}
+
+					break;
+				}
+				case SDLK_RETURN:
+				{
+					if (console_active) {
+						console_active = false;
+						std::istringstream iss(console_buf);
+						ConsumeConfigStream(iss);
+						console_buf.assign(" ");
+					}
+
+					break;
+				}
 				case SDLK_ESCAPE:
 					quit = true;
 					break;
@@ -625,13 +679,22 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				case SDLK_1:
-					image_plane = 1;
+					if (!console_active) {
+						image_plane = IMAGEPLANE_PERSPECTIVE;
+					}
+
 					break;
 				case SDLK_2:
-					image_plane = 2;
+					if (!console_active) {
+						image_plane = IMAGEPLANE_SPHERICAL;
+					}
+
 					break;
 				case SDLK_3:
-					image_plane = 3;
+					if (!console_active) {
+						image_plane = IMAGEPLANE_ORTHOGRAPHIC;
+					}
+
 					break;
 				default:
 					break;
@@ -641,40 +704,36 @@ int main(int argc, char *argv[]) {
 
 		const Uint8 *const kb_state = SDL_GetKeyboardState(NULL);
 
-		double move_mult = 0.01;
+		if (!console_active) {
+			const double move_mult = 0.01;
 
-		if (kb_state[SDL_SCANCODE_W]) {
-			cam_pos += ddelta * move_mult * forward;
+			if (kb_state[SDL_SCANCODE_W]) {
+				cam_pos += ddelta * move_mult * forward;
+			}
+			if (kb_state[SDL_SCANCODE_S]) {
+				cam_pos -= ddelta * move_mult * forward;
+			}
+			if (kb_state[SDL_SCANCODE_D]) {
+				cam_pos += ddelta * move_mult * right;
+			}
+			if (kb_state[SDL_SCANCODE_A]) {
+				cam_pos -= ddelta * move_mult * right;
+			}
+			if (kb_state[SDL_SCANCODE_SPACE]) {
+				cam_pos.z += ddelta * move_mult;
+			}
+			if (kb_state[SDL_SCANCODE_LSHIFT]) {
+				cam_pos.z -= ddelta * move_mult;
+			}
 		}
-		if (kb_state[SDL_SCANCODE_S]) {
-			cam_pos -= ddelta * move_mult * forward;
-		}
-		if (kb_state[SDL_SCANCODE_D]) {
-			cam_pos += ddelta * move_mult * right;
-		}
-		if (kb_state[SDL_SCANCODE_A]) {
-			cam_pos -= ddelta * move_mult * right;
-		}
-		if (kb_state[SDL_SCANCODE_SPACE]) {
-			cam_pos.z += ddelta * move_mult;
-		}
-		if (kb_state[SDL_SCANCODE_LSHIFT]) {
-			cam_pos.z -= ddelta * move_mult;
-		}
-
-		// std::cout
-		// 	<< "cam_pos: " << glm::to_string(cam_pos) << "\n"
-		// 	<< "hang vang: " << hang << " " << vang << "\n"
-		// 	<< "up: " << glm::to_string(up) << "\n"
-		// 	<< std::flush;
 
 		ImagePlane *ip;
 
-		if (image_plane == 1) {
+		if (image_plane == IMAGEPLANE_PERSPECTIVE) {
 			ip = new Perspective(cam_pos, look, up, hfov,
 				(double)screen_width / screen_height);
 		}
-		else if (image_plane == 2) {
+		else if (image_plane == IMAGEPLANE_SPHERICAL) {
 			ip = new Spherical(cam_pos, hang, vang, hfov,
 				(double)screen_width / screen_height);
 		}
@@ -742,17 +801,17 @@ int main(int argc, char *argv[]) {
 						}
 
 						double heightmap_z =
-							heightmap[gridx + gridy * heightmap_width];
+							heightmap_buf[gridx + gridy * heightmap_width];
 
 						if (int_point.z < heightmap_z + hmap_c0.z) {
 							// Draw
 							int red_index =
 								(gridx + gridy * colormap_width) * 3;
 
-							set_pixel(surface, w, h,
-								colormap[red_index],
-								colormap[red_index + 1],
-								colormap[red_index + 2]);
+							SetPixel(surface, w, h,
+								colormap_buf[red_index],
+								colormap_buf[red_index + 1],
+								colormap_buf[red_index + 2]);
 
 							real_hit = true;
 							break;
@@ -763,12 +822,12 @@ int main(int argc, char *argv[]) {
 				}
 
 				if (!real_hit) {
-					set_pixel(surface, w, h, bg_r, bg_g, bg_b);
+					SetPixel(surface, w, h, bg_r, bg_g, bg_b);
 				}
 
 				// // Debug heightmap box render
 				// if (hit) {
-				// 	set_pixel(surface, w, h,
+				// 	SetPixel(surface, w, h,
 				// 		(int)(int_point.x * 255) % 255,
 				// 		(int)(int_point.y * 255) % 255,
 				// 		(int)(int_point.z * 255) % 255
@@ -777,7 +836,7 @@ int main(int argc, char *argv[]) {
 
 				// // Debug plane render
 				// if (ray.dir.z < 0.0) {
-				// 	set_pixel(surface, w, h,
+				// 	SetPixel(surface, w, h,
 				// 		(int)(ray.dir.x * 255) % 255,
 				// 		(int)(ray.dir.y * 255) % 255,
 				// 		128);
@@ -785,8 +844,8 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		if (fps_surface_rerender_timer_ms >= fps_surface_rerender_period_ms) {
-			fps_surface_rerender_timer_ms = 0;
+		if (text_surface_rerender_timer_ms >= text_surface_rerender_period_ms) {
+			text_surface_rerender_timer_ms = 0;
 
 			SDL_Color fg = {255, 255, 255, 255};
 			SDL_Color bg = {0, 0, 0, 255};
@@ -798,6 +857,12 @@ int main(int argc, char *argv[]) {
 
 			SDL_FreeSurface(fps_surface);
 			fps_surface = TTF_RenderUTF8_Shaded(font, ss.str().c_str(), fg, bg);
+
+			bg = (SDL_Color){50, 100, 250, 255};
+
+			SDL_FreeSurface(console_surface);
+			console_surface = TTF_RenderUTF8_Shaded(
+				font, console_buf.c_str(), fg, bg);
 		}
 
 		if (show_fps) {
@@ -805,7 +870,21 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 
-			SDL_BlitSurface(fps_surface, NULL, surface, NULL);
+			SDL_Rect dst_rect = {5, 2, fps_surface->w, fps_surface->h};
+
+			SDL_BlitSurface(fps_surface, NULL, surface, &dst_rect);
+		}
+
+		if (console_active) {
+			if (console_surface == NULL) {
+				break;
+			}
+
+			SDL_Rect dst_rect = {
+				0, surface->h - console_surface->h - 10,
+				console_surface->w, console_surface->h
+			};
+			SDL_BlitSurface(console_surface, NULL, surface, &dst_rect);
 		}
 
 		SDL_UpdateWindowSurface(window);
@@ -819,13 +898,8 @@ int main(int argc, char *argv[]) {
 
 	TTF_CloseFont(font);
 
-	if (heightmap != NULL) {
-		delete heightmap;
-	}
-
-	if (colormap != NULL) {
-		stbi_image_free(colormap);
-	}
+	delete heightmap_buf;
+	stbi_image_free(colormap_buf);
 
 	return 0;
 }
