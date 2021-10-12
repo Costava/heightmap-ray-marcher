@@ -34,8 +34,8 @@ double hfov = M_PI / 2.0;
 double min_height = 0.0;
 double max_height = 10.0;
 
-// If base_heightmap_buf has components RGB,
-// then these lum values are used for (rR + gG +bB),
+// For each pixel in the given heightmap image with components RGB,
+// the pixel's heightmap value is (rR + gG + bB),
 // clamped to range [0.0, 255.0],
 // then scaled to range [min_height, max_height]
 double lum_r = 0.299;
@@ -226,6 +226,12 @@ void ConsumeConfigStream(std::istream &input) {
 			input >> max_height;
 			should_update_heightmap = true;
 			std::cout << "max_height: " << max_height << "\n";
+		}
+		else if (next == "lum") {
+			input >> lum_r >> lum_g >> lum_b;
+			should_update_heightmap = true;
+			std::cout << "lum: "
+			          << lum_r << " " << lum_g << " " << lum_b << "\n";
 		}
 		else if (next == "grid_width") {
 			input >> grid_width;
