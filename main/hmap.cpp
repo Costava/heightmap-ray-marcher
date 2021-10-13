@@ -600,6 +600,25 @@ int main(int argc, char *argv[]) {
 					vang = M_PI;
 				}
 			}
+			else if (event.type == SDL_MOUSEWHEEL) {
+				if (image_plane == IMAGEPLANE_PERSPECTIVE ||
+					image_plane == IMAGEPLANE_SPHERICAL)
+				{
+					const double new_hfov = hfov - 0.02 * event.wheel.y;
+
+					if (new_hfov > 0.0) {
+						hfov = new_hfov;
+					}
+				}
+				else if (image_plane == IMAGEPLANE_ORTHOGRAPHIC) {
+					const double new_orth_width =
+						ortho_width - 0.001 * event.wheel.y;
+
+					if (new_orth_width > 0.0) {
+						ortho_width = new_orth_width;
+					}
+				}
+			}
 			else if (event.type == SDL_TEXTINPUT && console_active) {
 				console_buf.append(event.text.text);
 			}
