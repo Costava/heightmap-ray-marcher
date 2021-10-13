@@ -63,14 +63,9 @@ double grid_width = 0.003;
 // How far to step at a time when raymarching
 double step_dist = 10.0 * grid_width;
 
-// Num bits to use for a render cycle
-// Must be even
-// If num_bits == 4, then a complete image will be drawn in 2^4 = 16 frames
-unsigned int num_bits = 6;
-unsigned int shift_amt;
-unsigned int full_mask;
-unsigned int half_mask;
-unsigned int incr;
+// Draw a full image across `cycle_period` number of frames.
+int cycle_period = 47;
+int cycle = 0;
 
 // Position of camera
 glm::dvec3 cam_pos(-5.0, 5.0, 0.0);
@@ -90,10 +85,6 @@ double mouse_sens = 0.00003;
 
 // Unit is units/millisecond
 double move_speed = 0.01;
-
-// Render only part of the screen in a single frame
-// Keep track of which part to render next
-int render_cycle = 0;
 
 bool fullscreen = false;
 
@@ -143,27 +134,6 @@ void SetPixel(
 
 	// Assume pitch has no dead space
 	pixels[x + (y * surface->w)] = color;
-}
-
-// num_bits should be multiple of 2 in range [min_cycle_bits, max_cycle_bits]
-unsigned int min_cycle_bits;
-unsigned int max_cycle_bits;
-
-// Update variables related to the render cycle based on using num_bits
-void UpdateCycleVars(
-	const unsigned int num_bits,
-	unsigned int *const shift_amt,
-	unsigned int *const full_mask,
-	unsigned int *const half_mask,
-	unsigned int *const incr)
-{
-	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
-
-	*shift_amt = num_bits / 2;
-	*full_mask = (UINT_MAX << (NUM_UINT_BITS - num_bits))
-	             >> (NUM_UINT_BITS - num_bits);
-	*half_mask = *full_mask >> (num_bits / 2);
-	*incr = *half_mask + 1;
 }
 
 // Read stream until end and update config values
@@ -265,36 +235,10 @@ void ConsumeConfigStream(std::istream &input) {
 			std::cout << "\tg: " << (int)bg_g << "\n";
 			std::cout << "\tb: " << (int)bg_b << "\n";
 		}
-		else if (next == "cycle_bits") {
-			int cyc;
-
-			input >> cyc;
-
-			if (cyc < 2) {
-				std::cout
-					<< "Ignoring cycle bits " << cyc << " because is < 2\n";
-			}
-			else if (cyc % 2 != 0) {
-				std::cout
-					<< "Ignoring cycle bits " << cyc
-					<< " because is not a multiple of 2\n";
-			}
-			else if ((unsigned int)cyc < min_cycle_bits ||
-			         (unsigned int)cyc > max_cycle_bits)
-			{
-				std::cout
-					<< "Ignoring cycle bits " << cyc
-					<< " because not in range [" << min_cycle_bits << ", "
-					<< max_cycle_bits << "]\n";
-			}
-			else {
-				std::cout << "cycle bits: " << cyc << "\n";
-
-				num_bits = cyc;
-
-				UpdateCycleVars(
-					num_bits, &shift_amt, &full_mask, &half_mask, &incr);
-			}
+		else if (next == "cycle") {
+			input >> cycle_period;
+			cycle = 0;
+			std::cout << "cycle: " << cycle_period << "\n";
 		}
 		else if (next == "mouse_sens") {
 			input >> mouse_sens;
@@ -401,21 +345,6 @@ void ConsumeConfigStream(std::istream &input) {
 }
 
 int main(int argc, char *argv[]) {
-	const unsigned int NUM_INT_BITS = 8 * sizeof(int);
-	const unsigned int NUM_UINT_BITS = 8 * sizeof(unsigned int);
-
-	if (NUM_INT_BITS != NUM_UINT_BITS) {
-		std::cerr
-			<< "Unknown int and unsigned int implementations" << "\n"
-			<< "NUM_INT_BITS: " << NUM_INT_BITS << "\n"
-			<< "NUM_UINT_BITS: " << NUM_UINT_BITS << "\n";
-
-		std::exit(1);
-	}
-
-	min_cycle_bits = 2;
-	max_cycle_bits = NUM_UINT_BITS;
-
 	if (argc != 2) {
 		std::cerr << "USAGE: hmap.exe path/to/config.txt\n";
 		std::exit(1);
@@ -492,8 +421,6 @@ int main(int argc, char *argv[]) {
 	SDL_UpdateWindowSurface(window);
 
 	std::srand((unsigned)std::time(NULL));
-
-	UpdateCycleVars(num_bits, &shift_amt, &full_mask, &half_mask, &incr);
 
 	bool quit = false;
 	bool show_fps = false;
@@ -818,94 +745,81 @@ int main(int argc, char *argv[]) {
 			max_height
 		);
 
-		// // 4 bit cycle
-		// // Look at least significant bits
-		// int initial_h = render_cycle & 0b11;
-		// int initial_w = (render_cycle >> 2) & 0b11;
-		// render_cycle = (render_cycle + 1) & 0xf;// Increment render cycle
+		cycle = (cycle + 1) % cycle_period;
 
-		// // 8 bit cycle
-		// // Look at least significant bits
-		// int initial_h = render_cycle & 0b1111;
-		// int initial_w = (render_cycle >> 4) & 0b1111;
-		// render_cycle = (render_cycle + 1) & 0xff;// Increment render cycle
+		for (int p = cycle; p < screen_width * screen_height; p += cycle_period) {
+			int w = p % screen_width;
+			int h = p / screen_width;
 
-		int initial_h = render_cycle & half_mask;
-		int initial_w = (render_cycle >> shift_amt) & half_mask;
-		render_cycle = (render_cycle + 1) & full_mask;
+			struct Ray ray = ip->GetRay(
+				(double)w / (screen_width - 1),
+				(double)h / (screen_height - 1)
+			);
 
-		for (int h = initial_h; h < screen_height; h += incr) {
-			for (int w = initial_w; w < screen_width; w += incr) {
-				struct Ray ray = ip->GetRay(
-					(double)w / (screen_width - 1),
-					(double)h / (screen_height - 1)
-				);
+			glm::dvec3 int_point;
+			bool hit = intersection(&int_point, ray, hmap_c0, hmap_c1);
 
-				glm::dvec3 int_point;
-				bool hit = intersection(&int_point, ray, hmap_c0, hmap_c1);
+			// Did the ray hit the actual heightmap and
+			//  not just the bounding box?
+			bool real_hit = false;
 
-				// Did the ray hit the actual heightmap and
-				//  not just the bounding box?
-				bool real_hit = false;
+			if (hit) {
+				int_point += grid_width * 0.01 * ray.dir;
 
-				if (hit) {
-					int_point += grid_width * 0.01 * ray.dir;
+				while (true) {
+					int gridx =
+						(int)( (int_point.x - hmap_c0.x) / grid_width);
+					int gridy =
+						(int)(-(int_point.y - hmap_c0.y) / grid_width);
 
-					while (true) {
-						int gridx =
-							(int)( (int_point.x - hmap_c0.x) / grid_width);
-						int gridy =
-							(int)(-(int_point.y - hmap_c0.y) / grid_width);
-
-						if (gridx < 0 || gridy < 0
-						    || gridx >= heightmap_width
-						    || gridy >= heightmap_height)
-						{
-							break;
-						}
-
-						double heightmap_z =
-							heightmap_buf[gridx + gridy * heightmap_width];
-
-						if (int_point.z < heightmap_z + hmap_c0.z) {
-							// Draw
-							int red_index =
-								(gridx + gridy * colormap_width) * 3;
-
-							SetPixel(surface, w, h,
-								colormap_buf[red_index],
-								colormap_buf[red_index + 1],
-								colormap_buf[red_index + 2]);
-
-							real_hit = true;
-							break;
-						}
-
-						int_point += step_dist * ray.dir;
+					if (gridx < 0 || gridy < 0
+						|| gridx >= heightmap_width
+						|| gridy >= heightmap_height)
+					{
+						break;
 					}
+
+					double heightmap_z =
+						heightmap_buf[gridx + gridy * heightmap_width];
+
+					if (int_point.z < heightmap_z + hmap_c0.z) {
+						// Draw
+						int red_index =
+							(gridx + gridy * colormap_width) * 3;
+
+						SetPixel(surface, w, h,
+							colormap_buf[red_index],
+							colormap_buf[red_index + 1],
+							colormap_buf[red_index + 2]);
+
+						real_hit = true;
+						break;
+					}
+
+					int_point += step_dist * ray.dir;
 				}
-
-				if (!real_hit) {
-					SetPixel(surface, w, h, bg_r, bg_g, bg_b);
-				}
-
-				// // Debug heightmap box render
-				// if (hit) {
-				// 	SetPixel(surface, w, h,
-				// 		(int)(int_point.x * 255) % 255,
-				// 		(int)(int_point.y * 255) % 255,
-				// 		(int)(int_point.z * 255) % 255
-				// 	);
-				// }
-
-				// // Debug plane render
-				// if (ray.dir.z < 0.0) {
-				// 	SetPixel(surface, w, h,
-				// 		(int)(ray.dir.x * 255) % 255,
-				// 		(int)(ray.dir.y * 255) % 255,
-				// 		128);
-				// }
 			}
+
+			if (!real_hit) {
+				SetPixel(surface, w, h, bg_r, bg_g, bg_b);
+			}
+
+			// // Debug heightmap box render
+			// if (hit) {
+			// 	SetPixel(surface, w, h,
+			// 		(int)(int_point.x * 255) % 255,
+			// 		(int)(int_point.y * 255) % 255,
+			// 		(int)(int_point.z * 255) % 255
+			// 	);
+			// }
+
+			// // Debug plane render
+			// if (ray.dir.z < 0.0) {
+			// 	SetPixel(surface, w, h,
+			// 		(int)(ray.dir.x * 255) % 255,
+			// 		(int)(ray.dir.y * 255) % 255,
+			// 		128);
+			// }
 		}
 
 		if (text_surface_rerender_timer_ms >= text_surface_rerender_period_ms) {

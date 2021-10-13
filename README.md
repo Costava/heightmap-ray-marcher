@@ -85,7 +85,7 @@ See `sample_config.txt` for an example.
 | ortho_width | \<double val> | The world space grid spacing of rays when using orthographic projection. |
 | step_dist | \<double val> | How far in world space to step when ray marching. |
 | bg_color | \<int red> \<int green> \<int blue> | The background color. Values should be in range [0, 255]. |
-| cycle_bits | \<int num> | The number of bits to use when keeping track of which part of the screen to render next. A full image will be rendered in 2^num frames. This is to help keep the frame rate more reasonable. The image gets updated in an order similar to a dither pattern. The value should be a multiple of 2 in the range [2, 32]. The upper limit depends on the `sizeof(unsigned int)` which is likely 4 bytes on your machine. |
+| cycle | \<int num> | A full image will be rendered across `num` frames. |
 | mouse_sens | \<double val> | Horizontal and vertical mouse sensitivity for rotating camera. |
 | move | \<double val> | Movement speed multiplier. |
 
