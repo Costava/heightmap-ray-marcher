@@ -91,6 +91,10 @@ bool fullscreen = false;
 // How far apart the orthographic rays are
 double ortho_width = 10.0 * grid_width;
 
+// The number of frames to render when recording
+// (saving frames out to image files).
+int recording_frame_count = 200;
+
 #define IMAGEPLANE_PERSPECTIVE  1
 #define IMAGEPLANE_SPHERICAL    2
 #define IMAGEPLANE_ORTHOGRAPHIC 3
@@ -134,6 +138,56 @@ void SetPixel(
 
 	// Assume pitch has no dead space
 	pixels[x + (y * surface->w)] = color;
+}
+
+// Save given surface as .png image at given path.
+void SavePNG(SDL_Surface *const surface, std::string path) {
+	Uint8 *const data = new Uint8[surface->w * surface->h * 3];
+
+	for (int i = 0; i < surface->w * surface->h; i += 1) {
+		const Uint32 pixel = ((Uint32*)surface->pixels)[i];
+
+		SDL_GetRGB(pixel, surface->format,
+			&data[i * 3 + 0],
+			&data[i * 3 + 1],
+			&data[i * 3 + 2]);
+	}
+
+	const int code = stbi_write_png(path.c_str(),
+		surface->w, surface->h, 3,
+		data, surface->w * 3);
+
+	if (code == 0) {
+		std::cerr << "Failed to write screenshot to " << path << "\n";
+	}
+	else {
+		std::cout << "Saved screenshot at " << path << "\n";
+	}
+
+	delete data;
+}
+
+// Update `heightmap_buf` using the current global parameters.
+void UpdateHeightmap() {
+	const int num_pixels = heightmap_width * heightmap_height;
+	delete heightmap_buf;
+	heightmap_buf = new double[num_pixels];
+
+	int p = 0;
+	for (int i = 0; i < num_pixels * 3; i += 3) {
+		const unsigned char r = base_heightmap_buf[i + 0];
+		const unsigned char g = base_heightmap_buf[i + 1];
+		const unsigned char b = base_heightmap_buf[i + 2];
+
+		const double value = Clamp<double>(
+			(lum_r * r) + (lum_g * g) + (lum_b * b),
+			0.0, 255.0
+		);
+
+		heightmap_buf[p] = (value / 255.0)
+		                   * (max_height - min_height) + min_height;
+		p += 1;
+	}
 }
 
 // Read stream until end and update config values
@@ -248,6 +302,11 @@ void ConsumeConfigStream(std::istream &input) {
 			input >> move_speed;
 			std::cout << "move: " << move_speed << "\n";
 		}
+		else if (next == "recording_frame_count") {
+			input >> recording_frame_count;
+			std::cout
+				<< "recording_frame_count: " << recording_frame_count << "\n";
+		}
 		else if (next == "heightmap") {
 			std::string path;
 			input >> path;
@@ -289,7 +348,7 @@ void ConsumeConfigStream(std::istream &input) {
 			std::cout << "colormap: " << path << "\n";
 		}
 		else {
-			std::cout << "WARNING: Unknown identifier: " << next << "\n";
+			std::cerr << "WARNING: Unknown identifier: " << next << "\n";
 		}
 	}
 
@@ -319,28 +378,8 @@ void ConsumeConfigStream(std::istream &input) {
 		std::exit(1);
 	}
 
-	if (!should_update_heightmap) {
-		return;
-	}
-
-	const int num_pixels = heightmap_width * heightmap_height;
-	delete heightmap_buf;
-	heightmap_buf = new double[num_pixels];
-
-	int p = 0;
-	for (int i = 0; i < num_pixels * 3; i += 3) {
-		const unsigned char r = base_heightmap_buf[i + 0];
-		const unsigned char g = base_heightmap_buf[i + 1];
-		const unsigned char b = base_heightmap_buf[i + 2];
-
-		const double value = Clamp<double>(
-			(lum_r * r) + (lum_g * g) + (lum_b * b),
-			0.0, 255.0
-		);
-
-		heightmap_buf[p] = (value / 255.0)
-		                   * (max_height - min_height) + min_height;
-		p += 1;
+	if (should_update_heightmap) {
+		UpdateHeightmap();
 	}
 }
 
@@ -448,6 +487,15 @@ int main(int argc, char *argv[]) {
 		std::exit(1);
 	}
 
+	bool recording = false;
+	// Auto-generated identifier (currently, unix epoch in seconds)
+	// that will differ from id of any existing recordings,
+	// so that frames can be written to image files
+	// without overwriting any files.
+	std::time_t recording_id;
+	// Current frame number while recording. Frame 0 is first frame.
+	int recording_frame_num = 0;
+
 	while (!quit) {
 		new_time = SDL_GetTicks();
 		delta = new_time - old_time;
@@ -553,6 +601,14 @@ int main(int argc, char *argv[]) {
 				const SDL_Keymod mod_state = SDL_GetModState();
 
 				switch (event.key.keysym.sym) {
+				case SDLK_q:
+				{
+					if (mod_state & KMOD_CTRL) {
+						quit = true;
+					}
+
+					break;
+				}
 				case SDLK_BACKQUOTE:
 				{
 					console_active = !console_active;
@@ -583,9 +639,6 @@ int main(int argc, char *argv[]) {
 
 					break;
 				}
-				case SDLK_ESCAPE:
-					quit = true;
-					break;
 				case SDLK_F1:
 				{
 					show_fps = !show_fps;
@@ -637,38 +690,15 @@ int main(int argc, char *argv[]) {
 						std::cerr
 							<< "Failed to get time for screenshot. "
 							<< "Screenshot NOT saved.\n";
-
-						break;
-					}
-
-					std::stringstream ss;
-					ss << "screenshots/hmap_" << seconds << ".png";
-					std::string path = ss.str();
-
-					Uint8 *const data = new Uint8[surface->w * surface->h * 3];
-
-					for (int i = 0; i < surface->w * surface->h; i += 1) {
-						const Uint32 pixel = ((Uint32*)surface->pixels)[i];
-
-						SDL_GetRGB(pixel, surface->format,
-							&data[i * 3 + 0],
-							&data[i * 3 + 1],
-							&data[i * 3 + 2]);
-					}
-
-					const int code = stbi_write_png(path.c_str(),
-						surface->w, surface->h, 3,
-						data, surface->w * 3);
-
-					if (code == 0) {
-						std::cerr
-							<< "Failed to write screenshot to " << path << "\n";
 					}
 					else {
-						std::cout << "Saved screenshot at " << path << "\n";
+						std::stringstream ss;
+						ss << "screenshots/hmap_" << seconds << ".png";
+						std::string path = ss.str();
+
+						SavePNG(surface, path);
 					}
 
-					delete data;
 					break;
 				}
 				case SDLK_1:
@@ -689,10 +719,55 @@ int main(int argc, char *argv[]) {
 					}
 
 					break;
+				case SDLK_r:
+				{
+					const bool ctrl_and_shift = (mod_state & KMOD_CTRL) &&
+					                            (mod_state & KMOD_SHIFT);
+
+					if (!console_active && ctrl_and_shift) {
+						if (!recording) {
+							recording = true;
+							recording_frame_num = 0;
+
+							recording_id = std::time(NULL);
+
+							if (recording_id == (std::time_t)(-1)) {
+								std::cerr
+									<< "Failed to get time for recording. "
+									<< "Recording NOT started.\n";
+
+								recording = false;
+							}
+						}
+						else {
+							recording = !recording;
+						}
+					}
+
+					break;
+				}
 				default:
 					break;
 				}
 			}
+		}
+
+		// If you intend for the camera to be stationary during the recording,
+		// Consider setting `move 0` and `mouse_sens 0` in the console
+		// before starting the recording.
+		// Also consider `cycle 1` so that frames are complete images.
+		//
+		// For a programmatic animation, alter this block and recompile.
+		if (recording)
+		{
+			// const double frprop = ((double)recording_frame_num)
+			//                       / (recording_frame_count);
+			//
+			// // Change some global parameters.
+			//
+			// // We need to update the heightmap if we have changed any
+			// // global parameters that have an effect on it.
+			// UpdateHeightmap();
 		}
 
 		const Uint8 *const kb_state = SDL_GetKeyboardState(NULL);
@@ -747,6 +822,7 @@ int main(int argc, char *argv[]) {
 
 		cycle = (cycle + 1) % cycle_period;
 
+		#pragma omp parallel for
 		for (int p = cycle; p < screen_width * screen_height; p += cycle_period) {
 			int w = p % screen_width;
 			int h = p / screen_width;
@@ -868,6 +944,21 @@ int main(int argc, char *argv[]) {
 		SDL_UpdateWindowSurface(window);
 
 		delete ip;
+
+		if (recording) {
+			std::stringstream ss;
+			ss << "screenshots/hmap_" << recording_id << "_"
+			   << recording_frame_num << ".png";
+
+			SavePNG(surface, ss.str());
+
+			recording_frame_num += 1;
+
+			if (recording_frame_num == recording_frame_count) {
+				recording = false;
+				std::cout << "Done recording.\n";
+			}
+		}
 	} // while (!quit)
 
 	SDL_FreeSurface(fps_surface);

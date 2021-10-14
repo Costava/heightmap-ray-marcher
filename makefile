@@ -19,5 +19,5 @@ tmp/stb_image_write.o: vendor/stb_image_write.c vendor/stb_image_write.h | tmp
 hmap: main/hmap.cpp src/* vendor/* tmp/stb_image.o tmp/stb_image_write.o
 	g++ --output $@ -std=c++98 -Wall -Wextra -Wconversion -g                   \
 	-I ./src -I ./vendor                                                       \
-	-lSDL2 -lSDL2_ttf -lGL                                                     \
+	-lSDL2 -lSDL2_ttf -lGL -fopenmp                                            \
 	main/hmap.cpp src/*.cpp tmp/stb_image.o tmp/stb_image_write.o

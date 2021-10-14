@@ -11,12 +11,13 @@ Switch the projection mode with the number keys:
 
 Also:
 
-- Press Escape to exit.
+- Ctrl+Q to exit.
 - Press F1 to toggle showing the frames per second.
 - Press F11 to toggle fullscreen.
 - Press F12 to save a screenshot in `screenshots` directory.
 - Press backtick (left of `1`) to toggle the console for changing configuration at runtime.
 - Parsing the console input is the same as the parsing for the config file.
+- Press Ctrl+Shift+R to begin recording (saving frames out to image files) or to stop recording early (otherwise recording will stop after `recording_frame_count` number of frames).
 - You can freely resize the window.
 
 For each pixel, a ray is cast and intersection is checked with an axis aligned bounding box (AABB) around the heightmap.
@@ -88,6 +89,7 @@ See `sample_config.txt` for an example.
 | cycle | \<int num> | A full image will be rendered across `num` frames. |
 | mouse_sens | \<double val> | Horizontal and vertical mouse sensitivity for rotating camera. |
 | move | \<double val> | Movement speed multiplier. |
+| recording_frame_count | \<int count> | The number of frames to render when recording (saving frames out to image files). |
 
 ## Build and run on Linux
 
