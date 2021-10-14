@@ -26,8 +26,8 @@
 SDL_Window *window = NULL;
 
 // Window content dimensions (pixels)
-int screen_width = 512;
-int screen_height = 512;
+int screen_width = 800;
+int screen_height = 600;
 
 // Horizontal field of view (radians)
 double hfov = M_PI / 2.0;
@@ -58,10 +58,10 @@ int colormap_height;
 
 // Width and height of grid cells of image heightmap
 // i.e. how far apart pixels from the image are in world space when rendered
-double grid_width = 0.003;
+double grid_width = 0.05;
 
 // How far to step at a time when raymarching
-double step_dist = 10.0 * grid_width;
+double step_dist = 5.0 * grid_width;
 
 // Draw a full image across `cycle_period` number of frames.
 int cycle_period = 47;
@@ -81,15 +81,17 @@ double hang = -M_PI / 4.0;
 double vang = M_PI / 2.0;
 
 // Horizontal and vertical mouse sensitivity
-double mouse_sens = 0.00003;
+double mouse_sens = 1.0;
+// Sensitivity when zooming in/out with scroll wheel.
+double scroll_sens = 1.0;
 
 // Unit is units/millisecond
-double move_speed = 0.01;
+double move_speed = 0.05;
 
 bool fullscreen = false;
 
 // How far apart the orthographic rays are
-double ortho_width = 10.0 * grid_width;
+double ortho_width = 2.0 * grid_width;
 
 // The number of frames to render when recording
 // (saving frames out to image files).
@@ -338,6 +340,10 @@ void ConsumeConfigStream(std::istream &input) {
 			input >> mouse_sens;
 			std::cout << "mouse_sens: " << mouse_sens << "\n";
 		}
+		else if (next == "scroll_sens") {
+			input >> scroll_sens;
+			std::cout << "scroll_sens: " << scroll_sens << "\n";
+		}
 		else if (next == "move") {
 			input >> move_speed;
 			std::cout << "move: " << move_speed << "\n";
@@ -565,8 +571,8 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			else if (event.type == SDL_MOUSEMOTION) {
-				hang -= mouse_sens * event.motion.xrel * ddelta;
-				vang += mouse_sens * event.motion.yrel * ddelta;
+				hang -= mouse_sens * 0.00025 * event.motion.xrel * ddelta;
+				vang += mouse_sens * 0.00025 * event.motion.yrel * ddelta;
 
 				if (vang < 0.0) {
 					vang = 0.0;
@@ -579,18 +585,19 @@ int main(int argc, char *argv[]) {
 				if (image_plane == IMAGEPLANE_PERSPECTIVE ||
 					image_plane == IMAGEPLANE_SPHERICAL)
 				{
-					const double new_hfov = hfov - 0.02 * event.wheel.y;
+					const double new_hfov =
+						hfov - (scroll_sens * 0.03 * event.wheel.y);
 
 					if (new_hfov > 0.0) {
 						hfov = new_hfov;
 					}
 				}
 				else if (image_plane == IMAGEPLANE_ORTHOGRAPHIC) {
-					const double new_orth_width =
-						ortho_width - 0.001 * event.wheel.y;
+					const double new_ortho_width =
+						ortho_width - (scroll_sens * 0.0075 * event.wheel.y);
 
-					if (new_orth_width > 0.0) {
-						ortho_width = new_orth_width;
+					if (new_ortho_width > 0.0) {
+						ortho_width = new_ortho_width;
 					}
 				}
 			}

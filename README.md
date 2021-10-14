@@ -1,4 +1,4 @@
-# heightmap-ray-marcher
+# Heightmap Ray Marcher
 
 A ray marcher for heightmap images (or any images) with a real time freely moving camera.
 
@@ -12,6 +12,7 @@ Switch the projection mode with the number keys:
 Also:
 
 - Ctrl+Q to exit.
+- Zoom in/out with scroll wheel.
 - Press F1 to toggle showing the frames per second.
 - Press F11 to toggle fullscreen.
 - Press F12 to save a screenshot in `screenshots` directory.
@@ -88,6 +89,7 @@ See `sample_config.txt` for an example.
 | bg_color | \<int red> \<int green> \<int blue> | The background color. Values should be in range [0, 255]. |
 | cycle | \<int num> | A full image will be rendered across `num` frames. |
 | mouse_sens | \<double val> | Horizontal and vertical mouse sensitivity for rotating camera. |
+| scroll_sens | \<double val> | Sensitivity when zooming in/out with scroll wheel. |
 | move | \<double val> | Movement speed multiplier. |
 | recording_frame_count | \<int count> | The number of frames to render when recording (saving frames out to image files). |
 
