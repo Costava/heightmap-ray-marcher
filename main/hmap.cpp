@@ -196,7 +196,47 @@ void ConsumeConfigStream(std::istream &input) {
 
 	std::string next;
 	while (input >> next) {
-		if (next == "resolution") {
+		if (next == "heightmap") {
+			std::string path;
+			input >> path;
+
+			int n;
+
+			stbi_image_free((void*)base_heightmap_buf);
+			base_heightmap_buf = stbi_load(
+				path.c_str(), &heightmap_width, &heightmap_height, &n, 3);
+
+			if (base_heightmap_buf == NULL) {
+				std::cerr
+					<< "Failed to load image for heightmap from "
+					<< path << "\n";
+				std::exit(1);
+			}
+
+			should_update_heightmap = true;
+
+			std::cout << "heightmap: " << path << "\n";
+		}
+		else if (next == "colormap") {
+			std::string path;
+			input >> path;
+
+			int n;
+
+			stbi_image_free((void*)colormap_buf);
+			colormap_buf = stbi_load(
+				path.c_str(), &colormap_width, &colormap_height, &n, 3);
+
+			if (colormap_buf == NULL) {
+				std::cerr
+					<< "Failed to load image for colormap from "
+					<< path << "\n";
+				std::exit(1);
+			}
+
+			std::cout << "colormap: " << path << "\n";
+		}
+		else if (next == "resolution") {
 			input >> screen_width >> screen_height;
 
 			if (window != NULL) {
@@ -306,46 +346,6 @@ void ConsumeConfigStream(std::istream &input) {
 			input >> recording_frame_count;
 			std::cout
 				<< "recording_frame_count: " << recording_frame_count << "\n";
-		}
-		else if (next == "heightmap") {
-			std::string path;
-			input >> path;
-
-			int n;
-
-			stbi_image_free((void*)base_heightmap_buf);
-			base_heightmap_buf = stbi_load(
-				path.c_str(), &heightmap_width, &heightmap_height, &n, 3);
-
-			if (base_heightmap_buf == NULL) {
-				std::cerr
-					<< "Failed to load image for heightmap from "
-					<< path << "\n";
-				std::exit(1);
-			}
-
-			should_update_heightmap = true;
-
-			std::cout << "heightmap: " << path << "\n";
-		}
-		else if (next == "colormap") {
-			std::string path;
-			input >> path;
-
-			int n;
-
-			stbi_image_free((void*)colormap_buf);
-			colormap_buf = stbi_load(
-				path.c_str(), &colormap_width, &colormap_height, &n, 3);
-
-			if (colormap_buf == NULL) {
-				std::cerr
-					<< "Failed to load image for colormap from "
-					<< path << "\n";
-				std::exit(1);
-			}
-
-			std::cout << "colormap: " << path << "\n";
 		}
 		else {
 			std::cerr << "WARNING: Unknown identifier: " << next << "\n";
