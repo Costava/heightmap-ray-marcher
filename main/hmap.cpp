@@ -108,56 +108,48 @@ Uint8 bg_g = 0;
 Uint8 bg_b = 0;
 
 template<class T>
-T Clamp(const T value, const T min, const T max) {
+static T Clamp(const T value, const T min, const T max) {
 	if (value < min) return min;
 	if (value > max) return max;
 
 	return value;
 }
 
-double DegreesToRads(const double degrees) {
+template<class T>
+static T Lerp(const double prop, T v0, T v1) {
+	return v0 + prop * (v1 - v0);
+}
+
+static double DegreesToRads(const double degrees) {
 	return (degrees / 180.0) * M_PI;
 }
 
-double RadsToDegrees(const double rads) {
+static double RadsToDegrees(const double rads) {
 	return (rads / M_PI) * 180.0;
 }
 
-// This makes assumptions about the format of the surface
-// Could be improved to be more robust (but likely less performant)
-void SetPixel(
-	SDL_Surface *const surface,
+static void SetPixel(
+	Uint8 *const framebuf,
 	const int x,
 	const int y,
 	const Uint8 r,
 	const Uint8 g,
-	const Uint8 b)
+	const Uint8 b,
+	const Uint8 a)
 {
-	// Assume BytesPerPixel==4
-	Uint32 *const pixels = (Uint32 *) surface->pixels;
+	const size_t i = (x + y * screen_width) * 4;
 
-	const Uint32 color = SDL_MapRGB(surface->format, r, g, b);
-
-	// Assume pitch has no dead space
-	pixels[x + (y * surface->w)] = color;
+	framebuf[i + 0] = r;
+	framebuf[i + 1] = g;
+	framebuf[i + 2] = b;
+	framebuf[i + 3] = a;
 }
 
-// Save given surface as .png image at given path.
-void SavePNG(SDL_Surface *const surface, std::string path) {
-	Uint8 *const data = new Uint8[surface->w * surface->h * 3];
-
-	for (int i = 0; i < surface->w * surface->h; i += 1) {
-		const Uint32 pixel = ((Uint32*)surface->pixels)[i];
-
-		SDL_GetRGB(pixel, surface->format,
-			&data[i * 3 + 0],
-			&data[i * 3 + 1],
-			&data[i * 3 + 2]);
-	}
-
+// Save given RGBA frame buffer as .png image at given path.
+static void SavePNG(Uint8 *framebuf, std::string path) {
 	const int code = stbi_write_png(path.c_str(),
-		surface->w, surface->h, 3,
-		data, surface->w * 3);
+		screen_width, screen_height, 4,
+		framebuf, screen_width * 4);
 
 	if (code == 0) {
 		std::cerr << "Failed to write screenshot to " << path << "\n";
@@ -165,14 +157,12 @@ void SavePNG(SDL_Surface *const surface, std::string path) {
 	else {
 		std::cout << "Saved screenshot at " << path << "\n";
 	}
-
-	delete data;
 }
 
 // Update `heightmap_buf` using the current global parameters.
-void UpdateHeightmap() {
+static void UpdateHeightmap() {
 	const int num_pixels = heightmap_width * heightmap_height;
-	delete heightmap_buf;
+	delete[] heightmap_buf;
 	heightmap_buf = new double[num_pixels];
 
 	int p = 0;
@@ -193,7 +183,7 @@ void UpdateHeightmap() {
 }
 
 // Read stream until end and update config values
-void ConsumeConfigStream(std::istream &input) {
+static void ConsumeConfigStream(std::istream &input) {
 	bool should_update_heightmap = false;
 
 	std::string next;
@@ -227,7 +217,7 @@ void ConsumeConfigStream(std::istream &input) {
 
 			stbi_image_free((void*)colormap_buf);
 			colormap_buf = stbi_load(
-				path.c_str(), &colormap_width, &colormap_height, &n, 3);
+				path.c_str(), &colormap_width, &colormap_height, &n, 4);
 
 			if (colormap_buf == NULL) {
 				std::cerr
@@ -456,14 +446,26 @@ int main(int argc, char *argv[]) {
 		std::exit(1);
 	}
 
-	// "This surface will be freed when the window is destroyed.
-	//  Do not free this surface."
-	// https://wiki.libsdl.org/SDL_GetWindowSurface
-	SDL_Surface *surface = SDL_GetWindowSurface(window);
+	SDL_Renderer *renderer =
+		SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	// Initialize window to all background color
-	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, bg_r, bg_g, bg_b));
-	SDL_UpdateWindowSurface(window);
+	if (renderer == NULL) {
+		std::cerr << "Failed to create renderer: " << SDL_GetError() << "\n";
+		exit(1);
+	}
+
+	SDL_Texture *tex = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_ABGR8888,
+		SDL_TEXTUREACCESS_STREAMING,
+		screen_width, screen_height);
+
+	if (tex == NULL) {
+		std::cerr << "Failed to create texture: " << SDL_GetError() << "\n";
+		std::exit(1);
+	}
+
+	Uint8 *framebuf = new Uint8[screen_width * screen_height * 4];
 
 	std::srand((unsigned)std::time(NULL));
 
@@ -545,15 +547,25 @@ int main(int argc, char *argv[]) {
 			}
 			else if (event.type == SDL_WINDOWEVENT) {
 				if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-					surface = SDL_GetWindowSurface(window);
-
 					// Maybe different call if high DPI allowed
 					//  when window created
 					SDL_GetWindowSize(window, &screen_width, &screen_height);
 
-					// Show immediately that the screen has been
-					//  cleared by the resize
-					SDL_UpdateWindowSurface(window);
+					delete[] framebuf;
+					framebuf = new Uint8[screen_width * screen_height * 4];
+
+					SDL_DestroyTexture(tex);
+					tex = SDL_CreateTexture(
+						renderer,
+						SDL_PIXELFORMAT_ABGR8888,
+						SDL_TEXTUREACCESS_STREAMING,
+						screen_width, screen_height);
+
+					if (tex == NULL) {
+						std::cerr << "Failed to recreate texture: "
+						          << SDL_GetError() << "\n";
+						std::exit(1);
+					}
 				}
 				else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
 					if (SDL_SetRelativeMouseMode(SDL_TRUE)) {
@@ -588,7 +600,7 @@ int main(int argc, char *argv[]) {
 					const double new_hfov =
 						hfov - (scroll_sens * 0.03 * event.wheel.y);
 
-					if (new_hfov > 0.0) {
+					if (new_hfov > 0.0 && new_hfov < M_PI) {
 						hfov = new_hfov;
 					}
 				}
@@ -675,22 +687,6 @@ int main(int argc, char *argv[]) {
 						break;
 					}
 
-					if (surface->format->BytesPerPixel != 4) {
-						// Who owns the value
-						//  returned by SDL_GetPixelFormatName?
-						// I will assume I do not need to free it.
-						// https://wiki.libsdl.org/SDL_GetPixelFormatName
-
-						std::cerr
-							<< "Unhandled PixelFormat "
-							<< SDL_GetPixelFormatName(surface->format->format)
-							<< " has BytesPerPixel="
-							<< surface->format->BytesPerPixel
-							<< ". Screenshot NOT saved.\n";
-
-						break;
-					}
-
 					std::time_t seconds = std::time(NULL);
 
 					if (seconds == (std::time_t)(-1)) {
@@ -703,7 +699,7 @@ int main(int argc, char *argv[]) {
 						ss << "screenshots/hmap_" << seconds << ".png";
 						std::string path = ss.str();
 
-						SavePNG(surface, path);
+						SavePNG(framebuf, path);
 					}
 
 					break;
@@ -738,6 +734,11 @@ int main(int argc, char *argv[]) {
 
 							recording_id = std::time(NULL);
 
+							// move_speed = 0.0;
+							// mouse_sens = 0.0;
+							// scroll_sens = 0.0;
+							// cycle_period = 1;
+
 							if (recording_id == (std::time_t)(-1)) {
 								std::cerr
 									<< "Failed to get time for recording. "
@@ -759,16 +760,19 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		// If you intend for the camera to be stationary during the recording,
-		// Consider setting `move 0` and `mouse_sens 0` in the console
-		// before starting the recording.
+		// If you do not intend to manually move the camera while recording,
+		// before starting the recording, consider setting in the console:
+		//     move 0
+		//     mouse_sens 0
+		//     scroll_sens 0
+		//
 		// Also consider `cycle 1` so that frames are complete images.
 		//
 		// For a programmatic animation, alter this block and recompile.
 		if (recording)
 		{
-			// const double frprop = ((double)recording_frame_num)
-			//                       / (recording_frame_count);
+			// const double t =
+			// 	((double)recording_frame_num) / recording_frame_count;
 			//
 			// // Change some global parameters.
 			//
@@ -778,8 +782,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		const Uint8 *const kb_state = SDL_GetKeyboardState(NULL);
+		const SDL_Keymod mod_state = SDL_GetModState();
 
-		if (!console_active) {
+		if (!console_active && mod_state == KMOD_NONE) {
 			if (kb_state[SDL_SCANCODE_W]) {
 				cam_pos += ddelta * move_speed * forward;
 			}
@@ -795,7 +800,7 @@ int main(int argc, char *argv[]) {
 			if (kb_state[SDL_SCANCODE_SPACE]) {
 				cam_pos.z += ddelta * move_speed;
 			}
-			if (kb_state[SDL_SCANCODE_LSHIFT]) {
+			if (kb_state[SDL_SCANCODE_Q]) {
 				cam_pos.z -= ddelta * move_speed;
 			}
 		}
@@ -815,9 +820,6 @@ int main(int argc, char *argv[]) {
 				screen_width, screen_height);
 		}
 
-		// // Clear window to black
-		// SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0, 0, 0));
-
 		// Upper left bottom corner of the heightmap
 		glm::dvec3 hmap_c0(0.0, 0.0, min_height);
 		// Lower right top corner of the heightmap
@@ -830,7 +832,9 @@ int main(int argc, char *argv[]) {
 		cycle = (cycle + 1) % cycle_period;
 
 		#pragma omp parallel for
-		for (int p = cycle; p < screen_width * screen_height; p += cycle_period) {
+		for (int p = cycle; p < screen_width * screen_height;
+		     p += cycle_period)
+		{
 			int w = p % screen_width;
 			int h = p / screen_width;
 
@@ -867,13 +871,20 @@ int main(int argc, char *argv[]) {
 
 					if (int_point.z < heightmap_z + hmap_c0.z) {
 						// Draw
-						int red_index =
-							(gridx + gridy * colormap_width) * 3;
+						int red_index = (gridx + gridy * colormap_width) * 4;
 
-						SetPixel(surface, w, h,
-							colormap_buf[red_index],
-							colormap_buf[red_index + 1],
-							colormap_buf[red_index + 2]);
+						if (colormap_buf[red_index + 3] == 0) {
+							SetPixel(framebuf, w, h,
+								bg_r, bg_g, bg_b,
+								255);
+						}
+						else {
+							SetPixel(framebuf, w, h,
+								colormap_buf[red_index + 0],
+								colormap_buf[red_index + 1],
+								colormap_buf[red_index + 2],
+								255);
+						}
 
 						real_hit = true;
 						break;
@@ -884,28 +895,26 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (!real_hit) {
-				SetPixel(surface, w, h, bg_r, bg_g, bg_b);
+				// Sky-like effect
+				if (ray.dir.z > 0.0) {
+					const double r_ = 220.0 * std::pow(ray.dir.z, 2) + bg_r;
+					const double g_ = 240.0 * std::pow(ray.dir.z, 2) + bg_g;
+					const double b_ = 255.0 * ray.dir.z              + bg_b;
+
+					SetPixel(framebuf, w, h,
+						(Uint8)std::floor(Clamp<double>(r_, 0.0, 255.0)),
+						(Uint8)std::floor(Clamp<double>(g_, 0.0, 255.0)),
+						(Uint8)std::floor(Clamp<double>(b_, 0.0, 255.0)),
+						255);
+				}
+				else {
+					SetPixel(framebuf, w, h, bg_r, bg_g, bg_b, 255);
+				}
 			}
-
-			// // Debug heightmap box render
-			// if (hit) {
-			// 	SetPixel(surface, w, h,
-			// 		(int)(int_point.x * 255) % 255,
-			// 		(int)(int_point.y * 255) % 255,
-			// 		(int)(int_point.z * 255) % 255
-			// 	);
-			// }
-
-			// // Debug plane render
-			// if (ray.dir.z < 0.0) {
-			// 	SetPixel(surface, w, h,
-			// 		(int)(ray.dir.x * 255) % 255,
-			// 		(int)(ray.dir.y * 255) % 255,
-			// 		128);
-			// }
 		}
 
-		if (text_surface_rerender_timer_ms >= text_surface_rerender_period_ms) {
+		if (text_surface_rerender_timer_ms >= text_surface_rerender_period_ms)
+		{
 			text_surface_rerender_timer_ms = 0;
 
 			SDL_Color fg = {255, 255, 255, 255};
@@ -926,29 +935,52 @@ int main(int argc, char *argv[]) {
 				font, console_buf.c_str(), fg, bg);
 		}
 
-		if (show_fps) {
-			if (fps_surface == NULL) {
+		SDL_UpdateTexture(tex, NULL, framebuf, screen_width * 4);
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, tex, NULL, NULL);
+
+		// fps_surface and console_surface will not appear in screenshots
+		//  and recordings because they are sent 'straight to the renderer'
+		//  rather than being put into `framebuf`
+
+		if (show_fps && fps_surface != NULL) {
+			SDL_Texture *const ftex =
+				SDL_CreateTextureFromSurface(renderer, fps_surface);
+
+			if (ftex == NULL) {
+				std::cerr
+					<< "Failed to create texture from fps_surface: "
+					<< SDL_GetError() << "\n";
 				break;
 			}
 
 			SDL_Rect dst_rect = {5, 2, fps_surface->w, fps_surface->h};
+			SDL_RenderCopy(renderer, ftex, NULL, &dst_rect);
 
-			SDL_BlitSurface(fps_surface, NULL, surface, &dst_rect);
+			SDL_DestroyTexture(ftex);
 		}
 
-		if (console_active) {
-			if (console_surface == NULL) {
+		if (console_active && console_surface != NULL) {
+			SDL_Texture *const ftex =
+				SDL_CreateTextureFromSurface(renderer, console_surface);
+
+			if (ftex == NULL) {
+				std::cerr
+					<< "Failed to create texture from console_surface: "
+					<< SDL_GetError() << "\n";
 				break;
 			}
 
 			SDL_Rect dst_rect = {
-				0, surface->h - console_surface->h - 10,
+				0, screen_height - console_surface->h - 10,
 				console_surface->w, console_surface->h
 			};
-			SDL_BlitSurface(console_surface, NULL, surface, &dst_rect);
+			SDL_RenderCopy(renderer, ftex, NULL, &dst_rect);
+
+			SDL_DestroyTexture(ftex);
 		}
 
-		SDL_UpdateWindowSurface(window);
+		SDL_RenderPresent(renderer);
 
 		delete ip;
 
@@ -957,7 +989,7 @@ int main(int argc, char *argv[]) {
 			ss << "screenshots/hmap_" << recording_id << "_"
 			   << recording_frame_num << ".png";
 
-			SavePNG(surface, ss.str());
+			SavePNG(framebuf, ss.str());
 
 			recording_frame_num += 1;
 
@@ -968,16 +1000,19 @@ int main(int argc, char *argv[]) {
 		}
 	} // while (!quit)
 
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyTexture(tex);
 	SDL_FreeSurface(fps_surface);
 	SDL_FreeSurface(console_surface);
-
-	SDL_DestroyWindow(window);
 
 	TTF_CloseFont(font);
 
 	stbi_image_free((void*)base_heightmap_buf);
-	delete heightmap_buf;
+	delete[] heightmap_buf;
 	stbi_image_free((void*)colormap_buf);
+
+	delete[] framebuf;
 
 	return 0;
 }

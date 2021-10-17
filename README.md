@@ -2,7 +2,7 @@
 
 A ray marcher for heightmap images (or any images) with a real time freely moving camera.
 
-Move the camera with WASD and the mouse. Hold space to raise the camera and hold shift to lower it.  
+Move the camera with WASD and the mouse. Hold space to raise the camera and hold Q to lower it.  
 Switch the projection mode with the number keys:
 
 1. Perspective
@@ -72,7 +72,7 @@ See `sample_config.txt` for an example.
 
 | Identifier | Parameter(s) | Description |
 | ---------- | ------------ | ----------- |
-| heightmap | path/to/img.png | A path to an image. The image does NOT have to be greyscale. The luminance of the image's pixels determine the heights. The image can be any format supported by `stb_image.h`: JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, PNM. See `src/stb_image.h` for details and exceptions. The image must have the same resolution as the image for `colormap`. **This option must be specified.** |
+| heightmap | path/to/img.png | A path to an image. The image does NOT have to be greyscale. The luminance of the image's pixels determines the heights. The image can be any format supported by `stb_image.h`: JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, PNM. See `vendor/stb_image.h` for details and exceptions. The image must have the same resolution as the image for `colormap`. **This option must be specified.** |
 | colormap | path/to/img.png | Similar to `heightmap` but for determining colors. The easiest choice will be the same image as for `heightmap`. The specified image must have the same resolution as the image for `heightmap`. **This option must be specified.** |
 | resolution | \<int x> \<int y> | The x and y dimensions (in pixels) of the window content. |
 | hfov | \<double degrees> | Set the horizontal field of view (in degrees). You will likely experience issues if this is not in the range (0, 180). |
