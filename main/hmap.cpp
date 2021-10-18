@@ -11,8 +11,6 @@
 #include <SDL2/SDL_ttf.h>
 
 #include "glm/glm.hpp"
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/string_cast.hpp"
 
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -207,7 +205,7 @@ static void ConsumeConfigStream(std::istream &input) {
 
 			should_update_heightmap = true;
 
-			std::cout << "heightmap: " << path << "\n";
+			std::cout << "heightmap " << path << "\n";
 		}
 		else if (next == "colormap") {
 			std::string path;
@@ -226,7 +224,7 @@ static void ConsumeConfigStream(std::istream &input) {
 				std::exit(1);
 			}
 
-			std::cout << "colormap: " << path << "\n";
+			std::cout << "colormap " << path << "\n";
 		}
 		else if (next == "resolution") {
 			input >> screen_width >> screen_height;
@@ -235,145 +233,138 @@ static void ConsumeConfigStream(std::istream &input) {
 				SDL_SetWindowSize(window, screen_width, screen_height);
 			}
 
-			std::cout << "resolution: "
-			          << screen_width << " by " << screen_height << "\n";
+			std::cout << "resolution " << screen_width  << " "
+			                           << screen_height << "\n";
 		}
 		else if (next == "hfov") {
-			double hf;
-			input >> hf;
+			double hfdeg;
+			input >> hfdeg;
 
-			double new_hfov = DegreesToRads(hf);
-
-			std::cout << "hfov: " << hf << " degrees"
-			          << "\n";
-
-			hfov = new_hfov;
+			hfov = DegreesToRads(hfdeg);
+			std::cout << "hfov " << hfdeg << "\n";
 		}
 		else if (next == "hang") {
 			double deg;
 			input >> deg;
 
 			hang = DegreesToRads(deg);
+			std::cout << "hang " << deg << "\n";
 		}
 		else if (next == "vang") {
 			double deg;
 			input >> deg;
 
 			vang = DegreesToRads(deg);
+			std::cout << "vang " << deg << "\n";
 		}
 		else if (next == "pos") {
 			input >> cam_pos.x >> cam_pos.y >> cam_pos.z;
 
 			std::cout
-				<< "pos: "
+				<< "pos "
 				<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n";
 		}
 		else if (next == "pos_x") {
 			input >> cam_pos.x;
-
-			std::cout << "pos_x: " << cam_pos.x << "\n";
+			std::cout << "pos_x " << cam_pos.x << "\n";
 		}
 		else if (next == "pos_y") {
 			input >> cam_pos.y;
-
-			std::cout << "pos_y: " << cam_pos.y << "\n";
+			std::cout << "pos_y " << cam_pos.y << "\n";
 		}
 		else if (next == "pos_z") {
 			input >> cam_pos.z;
-
-			std::cout << "pos_z: " << cam_pos.z << "\n";
+			std::cout << "pos_z " << cam_pos.z << "\n";
 		}
 		else if (next == "print_pos") {
 			std::cout
-				<< "pos: " << glm::to_string(cam_pos) << "\n"
-				<< "hang vang: "
-				<< RadsToDegrees(hang) << " " << RadsToDegrees(vang) << "\n"
-				<< std::flush;
+				<< "pos "
+				<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n"
+				<< "hang " << RadsToDegrees(hang) << "\n"
+				<< "vang " << RadsToDegrees(vang) << "\n";
 		}
 		else if (next == "min_height") {
 			input >> min_height;
 			should_update_heightmap = true;
-			std::cout << "min_height: " << min_height << "\n";
+			std::cout << "min_height " << min_height << "\n";
 		}
 		else if (next == "max_height") {
 			input >> max_height;
 			should_update_heightmap = true;
-			std::cout << "max_height: " << max_height << "\n";
+			std::cout << "max_height " << max_height << "\n";
 		}
 		else if (next == "lum") {
 			input >> lum_r >> lum_g >> lum_b;
 			should_update_heightmap = true;
-			std::cout << "lum: "
+			std::cout << "lum "
 			          << lum_r << " " << lum_g << " " << lum_b << "\n";
 		}
 		else if (next == "lum_r") {
 			input >> lum_r;
 			should_update_heightmap = true;
-			std::cout << "lum: "
-			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+			std::cout << "lum_r " << lum_r << "\n";
 		}
 		else if (next == "lum_g") {
 			input >> lum_g;
 			should_update_heightmap = true;
-			std::cout << "lum: "
-			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+			std::cout << "lum_g " << lum_g << "\n";
 		}
 		else if (next == "lum_b") {
 			input >> lum_b;
 			should_update_heightmap = true;
-			std::cout << "lum: "
-			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+			std::cout << "lum_b " << lum_b << "\n";
 		}
 		else if (next == "grid_width") {
 			input >> grid_width;
-
-			std::cout << "grid_width: " << grid_width << "\n";
+			std::cout << "grid_width " << grid_width << "\n";
 		}
 		else if (next == "ortho_width") {
 			input >> ortho_width;
-
-			std::cout << "ortho_width: " << ortho_width << "\n";
+			std::cout << "ortho_width " << ortho_width << "\n";
 		}
 		else if (next == "step_dist") {
 			input >> step_dist;
-
-			std::cout << "step_dist: " << step_dist << "\n";
+			std::cout << "step_dist " << step_dist << "\n";
 		}
 		else if (next == "bg_color") {
+			// Read into int intermediaries because
+			//  stream does not properly read directly to Uint8.
 			int r, g, b;
-
 			input >> r >> g >> b;
 
 			bg_r = (Uint8)r;
 			bg_g = (Uint8)g;
 			bg_b = (Uint8)b;
 
-			std::cout << "bg_color:" << "\n";
-			std::cout << "\tr: " << (int)bg_r << "\n";
-			std::cout << "\tg: " << (int)bg_g << "\n";
-			std::cout << "\tb: " << (int)bg_b << "\n";
+			// Need casts because
+			//  stream does not print Uint8 as ASCII decimal as expected.
+			std::cout
+				<< "bg_color "
+				<< ((int)bg_r) << " "
+				<< ((int)bg_g) << " "
+				<< ((int)bg_b) << "\n";
 		}
 		else if (next == "cycle") {
 			input >> cycle_period;
 			cycle = 0;
-			std::cout << "cycle: " << cycle_period << "\n";
+			std::cout << "cycle " << cycle_period << "\n";
 		}
 		else if (next == "mouse_sens") {
 			input >> mouse_sens;
-			std::cout << "mouse_sens: " << mouse_sens << "\n";
+			std::cout << "mouse_sens " << mouse_sens << "\n";
 		}
 		else if (next == "scroll_sens") {
 			input >> scroll_sens;
-			std::cout << "scroll_sens: " << scroll_sens << "\n";
+			std::cout << "scroll_sens " << scroll_sens << "\n";
 		}
 		else if (next == "move") {
 			input >> move_speed;
-			std::cout << "move: " << move_speed << "\n";
+			std::cout << "move " << move_speed << "\n";
 		}
 		else if (next == "recording_frame_count") {
 			input >> recording_frame_count;
 			std::cout
-				<< "recording_frame_count: " << recording_frame_count << "\n";
+				<< "recording_frame_count " << recording_frame_count << "\n";
 		}
 		else {
 			std::cerr << "WARNING: Unknown identifier: " << next << "\n";
