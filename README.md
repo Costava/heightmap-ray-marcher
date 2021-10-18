@@ -78,7 +78,10 @@ See `sample_config.txt` for an example.
 | hfov | \<double degrees> | Set the horizontal field of view (in degrees). You will likely experience issues if this is not in the range (0, 180). |
 | hang | \<double degrees> | Horizontal angle of camera. 0 is looking in direction of positive x axis. 90 is looking in direction of positive y axis, |
 | vang | \<double degrees> | Vertical angle of camera. 0 is looking straight up (with positive z axis). 90 is looking parallel to xy plane. |
-| pos | \<double x> \<double y> \<double z> | Position of camera |
+| pos | \<double x> \<double y> \<double z> | Set position of camera. |
+| pos_x | \<double x> | Set x coordinate of camera. |
+| pos_y | \<double y> | Set y coordinate of camera. |
+| pos_z | \<double z> | Set z coordinate of camera. |
 | print_pos | NA | Prints to stdout the current position and horizontal and vertical viewing angles of the camera. |
 | min_height | \<double z> | The minimum world space height in the height map. Values are normalized between the min and max. |
 | max_height | \<double z> | The maximum world space height in the height map. |

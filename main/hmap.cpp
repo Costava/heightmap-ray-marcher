@@ -262,12 +262,26 @@ static void ConsumeConfigStream(std::istream &input) {
 			vang = DegreesToRads(deg);
 		}
 		else if (next == "pos") {
-			double x, y, z;
-			input >> x >> y >> z;
+			input >> cam_pos.x >> cam_pos.y >> cam_pos.z;
 
-			cam_pos.x = x;
-			cam_pos.y = y;
-			cam_pos.z = z;
+			std::cout
+				<< "pos: "
+				<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n";
+		}
+		else if (next == "pos_x") {
+			input >> cam_pos.x;
+
+			std::cout << "pos_x: " << cam_pos.x << "\n";
+		}
+		else if (next == "pos_y") {
+			input >> cam_pos.y;
+
+			std::cout << "pos_y: " << cam_pos.y << "\n";
+		}
+		else if (next == "pos_z") {
+			input >> cam_pos.z;
+
+			std::cout << "pos_z: " << cam_pos.z << "\n";
 		}
 		else if (next == "print_pos") {
 			std::cout
