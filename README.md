@@ -82,7 +82,10 @@ See `sample_config.txt` for an example.
 | print_pos | NA | Prints to stdout the current position and horizontal and vertical viewing angles of the camera. |
 | min_height | \<double z> | The minimum world space height in the height map. Values are normalized between the min and max. |
 | max_height | \<double z> | The maximum world space height in the height map. |
-| lum | \<double r> \<double g> \<double b> | For each pixel in the given heightmap image with components RGB, the pixel's heightmap value is (rR + gG + bB), clamped to range [0.0, 255.0], then scaled to range [min_height, max_height] |
+| lum | \<double r> \<double g> \<double b> | For each pixel in the heightmap image with components RGB, the pixel's heightmap value is (rR + gG + bB), clamped to range [0.0, 255.0], then scaled to range [min_height, max_height] |
+| lum_r | \<double r> | `lum` but only setting R component. |
+| lum_g | \<double g> | `lum` but only setting G component. |
+| lum_b | \<double b> | `lum` but only setting B component. |
 | grid_width | \<double val> | The world space grid square size of the heightmap. |
 | ortho_width | \<double val> | The world space grid spacing of rays when using orthographic projection. |
 | step_dist | \<double val> | How far in world space to step when ray marching. |

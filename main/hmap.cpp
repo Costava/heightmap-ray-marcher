@@ -292,6 +292,24 @@ static void ConsumeConfigStream(std::istream &input) {
 			std::cout << "lum: "
 			          << lum_r << " " << lum_g << " " << lum_b << "\n";
 		}
+		else if (next == "lum_r") {
+			input >> lum_r;
+			should_update_heightmap = true;
+			std::cout << "lum: "
+			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+		}
+		else if (next == "lum_g") {
+			input >> lum_g;
+			should_update_heightmap = true;
+			std::cout << "lum: "
+			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+		}
+		else if (next == "lum_b") {
+			input >> lum_b;
+			should_update_heightmap = true;
+			std::cout << "lum: "
+			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+		}
 		else if (next == "grid_width") {
 			input >> grid_width;
 
