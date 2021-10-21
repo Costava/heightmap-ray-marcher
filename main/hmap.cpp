@@ -21,6 +21,10 @@
 #include "Spherical.hpp"
 #include "Orthographic.hpp"
 
+//////////////////////////////////////////////////////////////////////////////
+// Globals
+//////////////////////////////////////////////////////////////////////////////
+
 SDL_Window *window = NULL;
 
 // Window content dimensions (pixels)
@@ -42,6 +46,7 @@ double lum_r = 0.299;
 double lum_g = 0.587;
 double lum_b = 0.114;
 
+std::string heightmap_path;
 // BGR888 (R first component in buffer)
 const unsigned char *base_heightmap_buf = NULL;
 // Array of heights in range [min_height, max_height]
@@ -49,6 +54,7 @@ double *heightmap_buf = NULL;
 int heightmap_width;
 int heightmap_height;
 
+std::string colormap_path;
 // Array of RGB unsigned char values
 const unsigned char *colormap_buf = NULL;
 int colormap_width;
@@ -104,6 +110,10 @@ int image_plane = IMAGEPLANE_PERSPECTIVE;
 Uint8 bg_r = 0;
 Uint8 bg_g = 0;
 Uint8 bg_b = 0;
+
+//////////////////////////////////////////////////////////////////////////////
+// Helper/utility functions
+//////////////////////////////////////////////////////////////////////////////
 
 template<class T>
 static T Clamp(const T value, const T min, const T max) {
@@ -180,6 +190,121 @@ static void UpdateHeightmap() {
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Trivial printing functions
+//////////////////////////////////////////////////////////////////////////////
+
+static void PrintHeightmap() {
+	std::cout << "heightmap " << heightmap_path << "\n";
+}
+
+static void PrintColormap() {
+	std::cout << "colormap " << colormap_path << "\n";
+}
+
+static void PrintResolution() {
+	std::cout
+		<< "resolution " << screen_width  << " " << screen_height << "\n";
+}
+
+static void PrintHfov() {
+	std::cout << "hfov " << RadsToDegrees(hfov) << "\n";
+}
+
+static void PrintHang() {
+	std::cout << "hang " << RadsToDegrees(hang) << "\n";
+}
+
+static void PrintVang() {
+	std::cout << "vang " << RadsToDegrees(vang) << "\n";
+}
+
+static void PrintPos() {
+	std::cout
+		<< "pos "
+		<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n";
+}
+
+static void PrintMinHeight() {
+	std::cout << "min_height " << min_height << "\n";
+}
+
+static void PrintMaxHeight() {
+	std::cout << "max_height " << max_height << "\n";
+}
+
+static void PrintLum() {
+	std::cout << "lum " << lum_r << " " << lum_g << " " << lum_b << "\n";
+}
+
+static void PrintGridWidth() {
+	std::cout << "grid_width " << grid_width << "\n";
+}
+
+static void PrintOrthoWidth() {
+	std::cout << "ortho_width " << ortho_width << "\n";
+}
+
+static void PrintStepDist() {
+	std::cout << "step_dist " << step_dist << "\n";
+}
+
+static void PrintBgColor() {
+	// Need casts because
+	//  stream does not print Uint8 as ASCII decimal as expected.
+	std::cout
+		<< "bg_color "
+		<< ((int)bg_r) << " "
+		<< ((int)bg_g) << " "
+		<< ((int)bg_b) << "\n";
+}
+
+static void PrintCycle() {
+	std::cout << "cycle " << cycle_period << "\n";
+}
+
+static void PrintMouseSens() {
+	std::cout << "mouse_sens " << mouse_sens << "\n";
+}
+
+static void PrintScrollSens() {
+	std::cout << "scroll_sens " << scroll_sens << "\n";
+}
+
+static void PrintMove() {
+	std::cout << "move " << move_speed << "\n";
+}
+
+static void PrintRecordingFrameCount() {
+	std::cout << "recording_frame_count " << recording_frame_count << "\n";
+}
+
+static void PrintAllOptions() {
+	PrintHeightmap();
+	PrintColormap();
+	PrintResolution();
+	PrintHfov();
+	PrintHang();
+	PrintVang();
+	PrintPos();
+	PrintMinHeight();
+	PrintMaxHeight();
+	PrintLum();
+	PrintGridWidth();
+	PrintOrthoWidth();
+	PrintStepDist();
+	PrintBgColor();
+	PrintCycle();
+	PrintMouseSens();
+	PrintScrollSens();
+	PrintMove();
+	PrintRecordingFrameCount();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// More file-local functions
+//////////////////////////////////////////////////////////////////////////////
+
 // Read stream until end and update config values
 static void ConsumeConfigStream(std::istream &input) {
 	bool should_update_heightmap = false;
@@ -187,44 +312,48 @@ static void ConsumeConfigStream(std::istream &input) {
 	std::string next;
 	while (input >> next) {
 		if (next == "heightmap") {
-			std::string path;
-			input >> path;
+			input >> heightmap_path;
 
-			int n;
-
-			stbi_image_free((void*)base_heightmap_buf);
-			base_heightmap_buf = stbi_load(
-				path.c_str(), &heightmap_width, &heightmap_height, &n, 3);
+			{
+				int n;
+				stbi_image_free((void*)base_heightmap_buf);
+				base_heightmap_buf = stbi_load(heightmap_path.c_str(),
+					&heightmap_width, &heightmap_height, &n, 3);
+			}
 
 			if (base_heightmap_buf == NULL) {
 				std::cerr
 					<< "Failed to load image for heightmap from "
-					<< path << "\n";
+					<< heightmap_path << "\n";
 				std::exit(1);
 			}
 
 			should_update_heightmap = true;
 
-			std::cout << "heightmap " << path << "\n";
+			PrintHeightmap();
 		}
 		else if (next == "colormap") {
-			std::string path;
-			input >> path;
+			input >> colormap_path;
 
-			int n;
-
-			stbi_image_free((void*)colormap_buf);
-			colormap_buf = stbi_load(
-				path.c_str(), &colormap_width, &colormap_height, &n, 4);
+			{
+				int n;
+				stbi_image_free((void*)colormap_buf);
+				colormap_buf = stbi_load(colormap_path.c_str(),
+					&colormap_width, &colormap_height, &n, 4);
+			}
 
 			if (colormap_buf == NULL) {
 				std::cerr
 					<< "Failed to load image for colormap from "
-					<< path << "\n";
+					<< colormap_path << "\n";
 				std::exit(1);
 			}
 
-			std::cout << "colormap " << path << "\n";
+			PrintColormap();
+		}
+		else if (next == "print") {
+			std::cout << "print\n";
+			PrintAllOptions();
 		}
 		else if (next == "resolution") {
 			input >> screen_width >> screen_height;
@@ -233,36 +362,29 @@ static void ConsumeConfigStream(std::istream &input) {
 				SDL_SetWindowSize(window, screen_width, screen_height);
 			}
 
-			std::cout << "resolution " << screen_width  << " "
-			                           << screen_height << "\n";
+			PrintResolution();
 		}
 		else if (next == "hfov") {
-			double hfdeg;
-			input >> hfdeg;
-
-			hfov = DegreesToRads(hfdeg);
-			std::cout << "hfov " << hfdeg << "\n";
+			double deg;
+			input >> deg;
+			hfov = DegreesToRads(deg);
+			PrintHfov();
 		}
 		else if (next == "hang") {
 			double deg;
 			input >> deg;
-
 			hang = DegreesToRads(deg);
-			std::cout << "hang " << deg << "\n";
+			PrintHang();
 		}
 		else if (next == "vang") {
 			double deg;
 			input >> deg;
-
 			vang = DegreesToRads(deg);
-			std::cout << "vang " << deg << "\n";
+			PrintVang();
 		}
 		else if (next == "pos") {
 			input >> cam_pos.x >> cam_pos.y >> cam_pos.z;
-
-			std::cout
-				<< "pos "
-				<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n";
+			PrintPos();
 		}
 		else if (next == "pos_x") {
 			input >> cam_pos.x;
@@ -276,28 +398,20 @@ static void ConsumeConfigStream(std::istream &input) {
 			input >> cam_pos.z;
 			std::cout << "pos_z " << cam_pos.z << "\n";
 		}
-		else if (next == "print_pos") {
-			std::cout
-				<< "pos "
-				<< cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << "\n"
-				<< "hang " << RadsToDegrees(hang) << "\n"
-				<< "vang " << RadsToDegrees(vang) << "\n";
-		}
 		else if (next == "min_height") {
 			input >> min_height;
 			should_update_heightmap = true;
-			std::cout << "min_height " << min_height << "\n";
+			PrintMinHeight();
 		}
 		else if (next == "max_height") {
 			input >> max_height;
 			should_update_heightmap = true;
-			std::cout << "max_height " << max_height << "\n";
+			PrintMaxHeight();
 		}
 		else if (next == "lum") {
 			input >> lum_r >> lum_g >> lum_b;
 			should_update_heightmap = true;
-			std::cout << "lum "
-			          << lum_r << " " << lum_g << " " << lum_b << "\n";
+			PrintLum();
 		}
 		else if (next == "lum_r") {
 			input >> lum_r;
@@ -316,15 +430,15 @@ static void ConsumeConfigStream(std::istream &input) {
 		}
 		else if (next == "grid_width") {
 			input >> grid_width;
-			std::cout << "grid_width " << grid_width << "\n";
+			PrintGridWidth();
 		}
 		else if (next == "ortho_width") {
 			input >> ortho_width;
-			std::cout << "ortho_width " << ortho_width << "\n";
+			PrintOrthoWidth();
 		}
 		else if (next == "step_dist") {
 			input >> step_dist;
-			std::cout << "step_dist " << step_dist << "\n";
+			PrintStepDist();
 		}
 		else if (next == "bg_color") {
 			// Read into int intermediaries because
@@ -336,35 +450,28 @@ static void ConsumeConfigStream(std::istream &input) {
 			bg_g = (Uint8)g;
 			bg_b = (Uint8)b;
 
-			// Need casts because
-			//  stream does not print Uint8 as ASCII decimal as expected.
-			std::cout
-				<< "bg_color "
-				<< ((int)bg_r) << " "
-				<< ((int)bg_g) << " "
-				<< ((int)bg_b) << "\n";
+			PrintBgColor();
 		}
 		else if (next == "cycle") {
 			input >> cycle_period;
 			cycle = 0;
-			std::cout << "cycle " << cycle_period << "\n";
+			PrintCycle();
 		}
 		else if (next == "mouse_sens") {
 			input >> mouse_sens;
-			std::cout << "mouse_sens " << mouse_sens << "\n";
+			PrintMouseSens();
 		}
 		else if (next == "scroll_sens") {
 			input >> scroll_sens;
-			std::cout << "scroll_sens " << scroll_sens << "\n";
+			PrintScrollSens();
 		}
 		else if (next == "move") {
 			input >> move_speed;
-			std::cout << "move " << move_speed << "\n";
+			PrintMove();
 		}
 		else if (next == "recording_frame_count") {
 			input >> recording_frame_count;
-			std::cout
-				<< "recording_frame_count " << recording_frame_count << "\n";
+			PrintRecordingFrameCount();
 		}
 		else {
 			std::cerr << "WARNING: Unknown identifier: " << next << "\n";
@@ -401,6 +508,10 @@ static void ConsumeConfigStream(std::istream &input) {
 		UpdateHeightmap();
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////////
+// main
+//////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
 	if (argc != 2) {

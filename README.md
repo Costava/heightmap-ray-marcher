@@ -74,6 +74,7 @@ See `sample_config.txt` for an example.
 | ---------- | ------------ | ----------- |
 | heightmap | path/to/img.png | A path to an image. The image does NOT have to be greyscale. The luminance of the image's pixels determines the heights. The image can be any format supported by `stb_image.h`: JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, PNM. See `vendor/stb_image.h` for details and exceptions. The image must have the same resolution as the image for `colormap`. **This option must be specified.** |
 | colormap | path/to/img.png | Similar to `heightmap` but for determining colors. The easiest choice will be the same image as for `heightmap`. The specified image must have the same resolution as the image for `heightmap`. **This option must be specified.** |
+| print | [No parameters] | Print current values of all options. |
 | resolution | \<int x> \<int y> | The x and y dimensions (in pixels) of the window content. |
 | hfov | \<double degrees> | Set the horizontal field of view (in degrees). You will likely experience issues if this is not in the range (0, 180). |
 | hang | \<double degrees> | Horizontal angle of camera. 0 is looking in direction of positive x axis. 90 is looking in direction of positive y axis, |
@@ -82,7 +83,6 @@ See `sample_config.txt` for an example.
 | pos_x | \<double x> | Set x coordinate of camera. |
 | pos_y | \<double y> | Set y coordinate of camera. |
 | pos_z | \<double z> | Set z coordinate of camera. |
-| print_pos | NA | Prints to stdout the current position and horizontal and vertical viewing angles of the camera. |
 | min_height | \<double z> | The minimum world space height in the height map. Values are normalized between the min and max. |
 | max_height | \<double z> | The maximum world space height in the height map. |
 | lum | \<double r> \<double g> \<double b> | For each pixel in the heightmap image with components RGB, the pixel's heightmap value is (rR + gG + bB), clamped to range [0.0, 255.0], then scaled to range [min_height, max_height] |
