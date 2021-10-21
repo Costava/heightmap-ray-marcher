@@ -86,6 +86,7 @@ See `sample_config.txt` for an example.
 | min_height | \<double z> | The minimum world space height in the height map. Values are normalized between the min and max. |
 | max_height | \<double z> | The maximum world space height in the height map. |
 | lum | \<double r> \<double g> \<double b> | For each pixel in the heightmap image with components RGB, the pixel's heightmap value is (rR + gG + bB), clamped to range [0.0, 255.0], then scaled to range [min_height, max_height] |
+| lum_norm | \<double r> \<double g> \<double b> | `lum` but the 3 components are normalized so that they sum to 1. |
 | lum_r | \<double r> | `lum` but only setting R component. |
 | lum_g | \<double g> | `lum` but only setting G component. |
 | lum_b | \<double b> | `lum` but only setting B component. |

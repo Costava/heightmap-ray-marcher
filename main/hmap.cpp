@@ -413,6 +413,16 @@ static void ConsumeConfigStream(std::istream &input) {
 			should_update_heightmap = true;
 			PrintLum();
 		}
+		else if (next == "lum_norm") {
+			double r, g, b;
+			input >> r >> g >> b;
+			const double total = r + g + b;
+			lum_r = r / total;
+			lum_g = g / total;
+			lum_b = b / total;
+			should_update_heightmap = true;
+			PrintLum();
+		}
 		else if (next == "lum_r") {
 			input >> lum_r;
 			should_update_heightmap = true;
